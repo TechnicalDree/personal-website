@@ -10,7 +10,8 @@ from urllib.parse import quote
 
 
 USER = "TechnicalDree"
-YEARS = [2026, 2025, 2024, 2023, 2022]
+CURRENT_YEAR = datetime.now(timezone.utc).year
+YEARS = list(range(CURRENT_YEAR, CURRENT_YEAR - 5, -1))
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "assets" / "github-history.json"
 OUT_JS = ROOT / "assets" / "github-history.js"

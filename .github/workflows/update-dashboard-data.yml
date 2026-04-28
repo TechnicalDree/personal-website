@@ -1,0 +1,45 @@
+name: Update dashboard data
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-dashboard-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Refresh generated dashboard data
+        env:
+          MONKEYTYPE_USER: a3rean
+          MONKEYTYPE_APE_KEY: ${{ secrets.MONKEYTYPE_APE_KEY }}
+          CURSOR_AI_LINE_EDITS: ${{ vars.CURSOR_AI_LINE_EDITS }}
+          CURSOR_MOST_ACTIVE_MONTH: ${{ vars.CURSOR_MOST_ACTIVE_MONTH }}
+          CURSOR_MOST_ACTIVE_DAY: ${{ vars.CURSOR_MOST_ACTIVE_DAY }}
+          CURSOR_LONGEST_STREAK: ${{ vars.CURSOR_LONGEST_STREAK }}
+          CURSOR_CURRENT_STREAK: ${{ vars.CURSOR_CURRENT_STREAK }}
+          WISPR_CURRENT_STREAK: ${{ vars.WISPR_CURRENT_STREAK }}
+          WISPR_LONGEST_STREAK: ${{ vars.WISPR_LONGEST_STREAK }}
+        run: python scripts/update-dashboard-data.py
+
+      - name: Commit refreshed data
+        run: |
+          if [ -n "$(git status --porcelain assets/github-history.json assets/github-history.js assets/monkeytype-history.json assets/monkeytype-history.js assets/dashboard-snapshots.js)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add assets/github-history.json assets/github-history.js assets/monkeytype-history.json assets/monkeytype-history.js assets/dashboard-snapshots.js
+            git commit -m "chore: refresh dashboard data"
+            git push
+          else
+            echo "No generated data changes."
+          fi
+

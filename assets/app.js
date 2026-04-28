@@ -169,7 +169,53 @@
 
   // Populate GitHub contribution history + Monkeytype widgets when home view renders.
   const GITHUB_USER = 'TechnicalDree';
-  const MONKEYTYPE_USER = 'TechnicalDree';
+  const MONKEYTYPE_USER = window.MONKEYTYPE_USER || 'TechnicalDree';
+  const MONKEYTYPE_USER_CANDIDATES = [
+    MONKEYTYPE_USER,
+    ...(window.MONKEYTYPE_USER_CANDIDATES || []),
+  ].filter(Boolean);
+  const SNAPSHOTS = window.DASHBOARD_SNAPSHOTS || {};
+  const MONKEYTYPE_FALLBACK_ACTIVITY = {
+    total: 548,
+    weeks: {
+      1: [[1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 2]],
+      2: [[1, 4], [2, 2], [6, 2], [7, 4]],
+      3: [[3, 3], [4, 2], [5, 2], [6, 3], [7, 3]],
+      4: [[2, 1], [3, 4], [4, 3], [5, 3], [6, 3]],
+      5: [[2, 1], [3, 3], [4, 2], [5, 2]],
+      6: [[1, 3], [7, 1]],
+      7: [[2, 2]],
+      8: [[3, 2], [7, 2]],
+      9: [[2, 4]],
+      10: [[1, 4]],
+      14: [[1, 2], [2, 2]],
+      15: [[2, 2]],
+      16: [[3, 2], [7, 2]],
+      17: [[1, 3], [3, 3], [5, 3], [6, 2]],
+      20: [[5, 2], [6, 2], [7, 1]],
+      21: [[1, 4], [3, 3], [6, 2], [7, 3]],
+      22: [[1, 4], [3, 2], [7, 3]],
+      23: [[6, 1], [7, 3]],
+      24: [[2, 2], [3, 4], [5, 3], [6, 4], [7, 4]],
+      25: [[3, 4], [4, 4], [5, 2]],
+      26: [[1, 3], [3, 3], [4, 2], [5, 2], [6, 3], [7, 3]],
+      27: [[2, 4], [4, 2], [5, 2]],
+      29: [[2, 3]],
+      30: [[4, 2], [5, 2]],
+      31: [[4, 2], [5, 2]],
+      32: [[3, 2], [6, 2], [7, 3]],
+      33: [[2, 2], [3, 2], [4, 2], [5, 3], [6, 3], [7, 2]],
+      34: [[4, 4], [5, 2]],
+      35: [[3, 4], [5, 3], [6, 3]],
+      41: [[2, 2]],
+      44: [[1, 3]],
+      45: [[3, 2], [6, 1], [7, 2]],
+      50: [[4, 3]],
+      51: [[1, 4], [7, 2]],
+      52: [[7, 2]],
+      53: [[4, 2], [7, 3]],
+    },
+  };
 
   const $ = (sel) => document.querySelector(sel);
   const shortDate = (value) => {
@@ -287,37 +333,39 @@
   }
 
   async function loadMonkeytype() {
-    const chart = $('#mk-chart');
+    const grid = $('#mk-grid');
     const meta = $('#mk-meta');
-    if (!chart || chart.dataset.ready) return;
-    chart.dataset.ready = '1';
+    if (!grid || grid.dataset.ready) return;
+    grid.dataset.ready = '1';
 
     try {
-      const profile = await fetchJson(`https://api.monkeytype.com/users/${MONKEYTYPE_USER}/profile?isUid=false`);
-      if (!profile.data?.name) throw new Error(profile.message || 'Monkeytype profile unavailable');
-      const data = profile.data;
-      const pbs = flattenPersonalBests(data.personalBests);
-      const best60 = pbs.find((pb) => pb.mode === 'time' && String(pb.mode2) === '60') || pbs[0];
-      const avgAcc = pbs.length ? pbs.reduce((sum, pb) => sum + (pb.acc || 0), 0) / pbs.length : 0;
-      const tests = data.typingStats?.completedTests || 0;
-      const hours = Math.round(((data.typingStats?.timeTyping || 0) / 3600) * 10) / 10;
-
-      setText('#mk-pb', best60?.wpm ? `${Math.round(best60.wpm)}<small>wpm</small>` : '--<small>wpm</small>');
-      setText('#mk-acc', avgAcc ? `${avgAcc.toFixed(1)}<small>%</small>` : '--<small>%</small>');
-      setText('#mk-tests', String(tests || '--'));
-      setText('#mk-time', hours ? `${hours}<small>h</small>` : '--<small>h</small>');
-      renderMonkeytypeList(pbs.slice(0, 4));
-      renderLineChart(chart, data.testActivity?.testsByDays || []);
-      if (meta) meta.textContent = `${data.name} · public profile`;
+      const data = window.MONKEYTYPE_HISTORY?.profile || await fetchMonkeytypeProfile();
+      const activity = monkeytypeActivity(data);
+      renderMonkeytypeCalendar(grid, activity);
+      setText('#mk-user-title', `◆ MONKEYTYPE // @${escapeHtml(data.name || MONKEYTYPE_USER)}`);
+      setText('#mk-total', `${activity.total.toLocaleString()} tests`);
+      if (meta) meta.textContent = `${data.name} · ${window.MONKEYTYPE_HISTORY ? 'cached export' : 'public profile'}`;
     } catch (error) {
-      setText('#mk-pb', '--<small>wpm</small>');
-      setText('#mk-acc', '--<small>%</small>');
-      setText('#mk-tests', '--');
-      setText('#mk-time', '--<small>h</small>');
-      renderMonkeytypeList([]);
-      renderLineChart(chart, []);
-      if (meta) meta.textContent = 'profile not found/public history disabled';
+      renderMonkeytypeCalendar(grid, MONKEYTYPE_FALLBACK_ACTIVITY);
+      setText('#mk-user-title', '◆ MONKEYTYPE // @a3rean');
+      setText('#mk-total', `${MONKEYTYPE_FALLBACK_ACTIVITY.total.toLocaleString()} tests`);
+      if (meta) meta.textContent = 'needs public username or Monkeytype export';
     }
+  }
+
+  async function fetchMonkeytypeProfile() {
+    let lastError;
+    const uniqueCandidates = [...new Set(MONKEYTYPE_USER_CANDIDATES)];
+    for (const username of uniqueCandidates) {
+      try {
+        const profile = await fetchJson(`https://api.monkeytype.com/users/${encodeURIComponent(username)}/profile?isUid=false`);
+        if (profile.data?.name) return profile.data;
+        lastError = new Error(profile.message || 'Monkeytype profile unavailable');
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error('Monkeytype profile unavailable');
   }
 
   function setText(selector, html) {
@@ -325,76 +373,163 @@
     if (el) el.innerHTML = html;
   }
 
-  function flattenPersonalBests(personalBests) {
-    const out = [];
-    Object.entries(personalBests || {}).forEach(([mode, byMode2]) => {
-      Object.entries(byMode2 || {}).forEach(([mode2, results]) => {
-        (results || []).forEach((result) => out.push({ ...result, mode, mode2 }));
+  function setHref(selector, href) {
+    const el = $(selector);
+    if (el && href) el.href = href;
+  }
+
+  function monkeytypeActivity(data) {
+    const days = data.testActivity?.days || [];
+    if (days.length) {
+      const weeks = {};
+      let total = 0;
+      days.slice(-371).forEach((day, index) => {
+        const week = Math.floor(index / 7) + 1;
+        const row = day.row || day.weekday || ((new Date(`${day.date}T00:00:00Z`).getUTCDay()) + 1);
+        const count = Number(day.count || 0);
+        if (!Number.isFinite(count) || count <= 0) return;
+        total += count;
+        weeks[week] ||= [];
+        weeks[week].push([row, day.level || activityLevel(count)]);
       });
-    });
-    return out
-      .filter((result) => result.wpm)
-      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      return { total: data.testActivity?.total || total, weeks };
+    }
+
+    if ((data.testActivity?.testsByDays || []).length >= 52) {
+      const values = data.testActivity.testsByDays.slice(-371);
+      const weeks = {};
+      let total = 0;
+      values.forEach((count, index) => {
+        if (!count) return;
+        total += count;
+        const week = Math.floor(index / 7) + 1;
+        const row = (index % 7) + 1;
+        weeks[week] ||= [];
+        weeks[week].push([row, activityLevel(count)]);
+      });
+      return { total, weeks };
+    }
+
+    return MONKEYTYPE_FALLBACK_ACTIVITY;
   }
 
-  function renderMonkeytypeList(results) {
-    const list = document.querySelector('.mk-recent');
-    if (!list) return;
-    if (results.length === 0) {
-      list.innerHTML = '<li><span class="mt-mode">public profile</span><span class="mt-wpm">unavailable</span><span class="mt-acc">--</span></li>';
-      return;
-    }
-    list.innerHTML = results.map((result) => `
-      <li>
-        <span class="mt-mode">${escapeHtml(result.mode)} ${escapeHtml(result.mode2)} · ${escapeHtml(result.language || 'english')}</span>
-        <span class="mt-wpm">${escapeHtml(Math.round(result.wpm))} wpm</span>
-        <span class="mt-acc">${escapeHtml(Math.round(result.acc || 0))}%</span>
-      </li>
-    `).join('');
+  function activityLevel(count) {
+    if (count <= 0) return 0;
+    if (count <= 1) return 1;
+    if (count <= 3) return 2;
+    if (count <= 6) return 3;
+    return 4;
   }
 
-  function renderLineChart(canvas, rawValues) {
-    const c = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    const values = rawValues.filter((v) => Number.isFinite(v)).slice(-30);
-    const data = values.length ? values : [0, 0, 0, 0, 0, 0, 0];
-    const maxV = Math.max(1, ...data);
-    c.clearRect(0, 0, W, H);
-    c.strokeStyle = 'rgba(107,255,191,0.15)';
-    c.lineWidth = 1;
-    for (let y = 0; y < H; y += 16) {
-      c.beginPath(); c.moveTo(0, y + 0.5); c.lineTo(W, y + 0.5); c.stroke();
+  function renderMonkeytypeCalendar(grid, activity) {
+    grid.innerHTML = '';
+    for (let week = 1; week <= 53; week += 1) {
+      for (let day = 1; day <= 7; day += 1) {
+        const cell = document.createElement('span');
+        const activeDay = activity.weeks?.[week]?.find(([row]) => row === day);
+        const level = activeDay?.[1] || 0;
+        cell.className = `mk-cell${level ? ` s${level}` : ''}`;
+        cell.style.gridColumn = String(week);
+        cell.style.gridRow = String(day);
+        grid.appendChild(cell);
+      }
     }
-    const step = data.length > 1 ? W / (data.length - 1) : W;
-    c.beginPath();
-    c.moveTo(0, H);
-    data.forEach((v, i) => {
-      const x = i * step;
-      const y = H - (v / maxV) * (H - 8) - 4;
-      c.lineTo(x, y);
-    });
-    c.lineTo(W, H);
-    c.closePath();
-    const g = c.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, 'rgba(255,74,214,0.55)');
-    g.addColorStop(1, 'rgba(255,74,214,0.05)');
-    c.fillStyle = g;
-    c.fill();
-    c.strokeStyle = '#3dfce5';
-    c.lineWidth = 1.5;
-    c.shadowBlur = 6; c.shadowColor = '#3dfce5';
-    c.beginPath();
-    data.forEach((v, i) => {
-      const x = i * step;
-      const y = H - (v / maxV) * (H - 8) - 4;
-      if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
-    });
-    c.stroke();
-    c.shadowBlur = 0;
+  }
+
+  function renderCursorHeatmap() {
+    const grid = $('#cursor-grid');
+    if (!grid || grid.dataset.ready) return;
+    grid.dataset.ready = '1';
+
+    const cursor = SNAPSHOTS.cursor || {};
+    const activeWeeks = cursor.weeks || {
+      20: [[6, 3]],
+      22: [[1, 1], [3, 1], [4, 1], [6, 1], [7, 2]],
+      23: [[1, 3]],
+      24: [[4, 1], [5, 1], [6, 1], [7, 1]],
+      26: [[1, 1], [2, 2], [3, 1], [4, 1], [5, 2], [6, 1], [7, 1]],
+      27: [[1, 1], [2, 2], [4, 1], [5, 1]],
+      28: [[4, 2], [7, 1]],
+      29: [[7, 1]],
+      30: [[1, 1], [3, 1], [5, 2]],
+      31: [[2, 1], [3, 1], [5, 1]],
+      32: [[3, 1], [5, 1], [6, 1]],
+      39: [[7, 2]],
+      40: [[1, 2], [7, 1]],
+      41: [[1, 1], [2, 2], [6, 3], [7, 2]],
+      42: [[2, 1], [3, 1], [4, 2], [5, 1], [6, 1], [7, 1]],
+      43: [[3, 1], [4, 1], [5, 3], [6, 2]],
+      44: [[1, 1], [5, 2]],
+      45: [[1, 1], [3, 1], [4, 1], [5, 1], [6, 2]],
+      46: [[1, 4], [3, 4], [5, 1], [7, 1]],
+      47: [[1, 1], [2, 1], [3, 1], [4, 1], [5, 3], [6, 1]],
+      48: [[1, 1], [4, 1], [5, 2], [6, 1], [7, 1]],
+      49: [[4, 3], [5, 1], [6, 4]],
+      50: [[1, 2], [2, 1], [5, 3], [6, 1]],
+      51: [[2, 1], [3, 1], [6, 2], [7, 1]],
+      52: [[5, 1], [6, 1]],
+      53: [[1, 4], [2, 2]],
+    };
+    setText('#cursor-total', Number(cursor.totalLineEdits || 49999).toLocaleString());
+    setText('#cursor-active-month', escapeHtml(cursor.mostActiveMonth || 'April'));
+    setText('#cursor-active-day', escapeHtml(cursor.mostActiveDay || 'Mar 10, 2026'));
+    setText('#cursor-longest-streak', escapeHtml(cursor.longestStreak || '9d'));
+    setText('#cursor-current-streak', escapeHtml(cursor.currentStreak || '2d'));
+    setHref('.cursor-panel .panel-link', cursor.dashboardUrl);
+    setHref('.cursor-card', cursor.dashboardUrl);
+
+    for (let week = 1; week <= 53; week += 1) {
+      for (let day = 1; day <= 7; day += 1) {
+        const cell = document.createElement('span');
+        const activeDay = activeWeeks[week]?.find(([row]) => row === day);
+        cell.className = `cursor-cell${activeDay ? ` s${activeDay[1]}` : ''}`;
+        cell.style.gridColumn = String(week);
+        cell.style.gridRow = String(day);
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  function renderWisprHeatmap() {
+    const grid = $('#wispr-grid');
+    if (!grid || grid.dataset.ready) return;
+    grid.dataset.ready = '1';
+
+    const wispr = SNAPSHOTS.wispr || {};
+    const activeWeeks = wispr.weeks || {
+      14: [[2, 3], [3, 4], [4, 4], [5, 4], [6, 4], [7, 3]],
+      15: [[1, 1], [2, 1], [3, 'muted'], [4, 1], [5, 3], [6, 3], [7, 'muted']],
+      16: [[1, 1], [2, 1], [3, 2], [4, 2], [5, 2], [6, 'muted'], [7, 2]],
+      17: [[1, 'muted'], [2, 1, true], [3, 1, true], [4, 1, true], [5, 4, true], [6, 4, true], [7, 2, true]],
+      18: [[1, 2, true], [2, 2, true]],
+    };
+    setText('#wispr-current-streak', escapeHtml(wispr.currentStreak || '8 day streak'));
+    setText('#wispr-longest-streak', escapeHtml(wispr.longestStreak || '18 DAYS'));
+    setHref('.wispr-panel .panel-link', wispr.dashboardUrl);
+    setHref('.wispr-card', wispr.dashboardUrl);
+
+    for (let week = 1; week <= 18; week += 1) {
+      for (let day = 1; day <= 7; day += 1) {
+        const cell = document.createElement('span');
+        const activeDay = activeWeeks[week]?.find(([row]) => row === day);
+        const level = activeDay?.[1];
+        const current = activeDay?.[2];
+        cell.className = [
+          'wispr-cell',
+          level ? `s${level}` : '',
+          current ? 'current' : '',
+        ].filter(Boolean).join(' ');
+        cell.style.gridColumn = String(week);
+        cell.style.gridRow = String(day);
+        grid.appendChild(cell);
+      }
+    }
   }
 
   const renderHomeExtras = () => {
     loadGitHub();
+    renderCursorHeatmap();
+    renderWisprHeatmap();
     loadMonkeytype();
   };
   window.addEventListener('load', renderHomeExtras);

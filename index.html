@@ -170,21 +170,76 @@
           </ul>
         </section>
 
-        <section class="panel">
+        <section class="panel cursor-panel">
           <div class="panel-hd">
-            <span class="panel-title">◆ MONKEYTYPE // @TechnicalDree</span>
-            <span class="panel-meta" id="mk-meta">loading typing profile...</span>
+            <span class="panel-title">◆ CURSOR // AI LINE EDITS</span>
+            <a class="panel-meta panel-link" href="https://cursor.com/dashboard" target="_blank" rel="noreferrer">open dashboard ↗</a>
           </div>
-          <div class="mk-stats">
-            <div class="mk-stat"><span class="mkk">PB 60s</span><span class="mkv" id="mk-pb">--<small>wpm</small></span></div>
-            <div class="mk-stat"><span class="mkk">AVG ACC</span><span class="mkv" id="mk-acc">--<small>%</small></span></div>
-            <div class="mk-stat"><span class="mkk">TESTS</span><span class="mkv" id="mk-tests">--</span></div>
-            <div class="mk-stat"><span class="mkk">TIME</span><span class="mkv" id="mk-time">--<small>h</small></span></div>
+          <a class="cursor-card" href="https://cursor.com/dashboard" target="_blank" rel="noreferrer" aria-label="Open Cursor dashboard">
+            <div class="cursor-card-top">
+              <div>
+                <span class="cursor-label">AI Line Edits</span>
+                <strong id="cursor-total">49,999</strong>
+              </div>
+              <div class="cursor-tabs"><span>All</span><span>Tab</span><span>Agent</span></div>
+            </div>
+            <div class="cursor-map-wrap">
+              <div class="cursor-months"><span>M</span><span>J</span><span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span><span>J</span><span>F</span><span>M</span><span>A</span><span>M</span></div>
+              <div class="cursor-map-row">
+                <div class="cursor-weekdays"><span>M</span><span>W</span><span>F</span></div>
+                <div class="cursor-grid" id="cursor-grid" aria-label="Cursor AI line edits heatmap"></div>
+              </div>
+            </div>
+            <div class="cursor-stats">
+              <div><span>Most Active Month</span><b id="cursor-active-month">April</b></div>
+              <div><span>Most Active Day</span><b id="cursor-active-day">Mar 10, 2026</b></div>
+              <div><span>Longest Streak</span><b id="cursor-longest-streak">9d</b></div>
+              <div><span>Current Streak</span><b id="cursor-current-streak">2d</b></div>
+            </div>
+          </a>
+        </section>
+
+        <section class="panel monkeytype-panel">
+          <div class="panel-hd">
+            <span class="panel-title" id="mk-user-title">◆ MONKEYTYPE // loading</span>
+            <span class="panel-meta" id="mk-meta">last 12 months</span>
           </div>
-          <canvas id="mk-chart" width="280" height="80"></canvas>
-          <ul class="mk-recent">
-            <li><span class="mt-mode">public profile</span><span class="mt-wpm">waiting</span><span class="mt-acc">--</span></li>
-          </ul>
+          <div class="mk-activity-head">
+            <div class="mk-range">last 12 months <span>⌄</span></div>
+            <span class="mk-total" id="mk-total">-- tests</span>
+            <div class="mk-legend" aria-label="Monkeytype activity intensity">
+              <span>less</span>
+              <span class="sw s1"></span><span class="sw s2"></span><span class="sw s3"></span><span class="sw s4"></span>
+              <span>more</span>
+            </div>
+          </div>
+          <div class="mk-activity">
+            <div class="mk-weekdays" aria-hidden="true"><span>monday</span><span>wednesday</span><span>friday</span></div>
+            <div class="mk-grid" id="mk-grid" aria-label="Monkeytype activity calendar"></div>
+          </div>
+          <p class="mk-note">Note: All activity data is using UTC time.</p>
+        </section>
+
+        <section class="panel wispr-panel">
+          <div class="panel-hd">
+            <span class="panel-title">◆ WISPR FLOW // adrianm2003az@gmail.com</span>
+            <a class="panel-meta panel-link" href="https://admin.wisprflow.ai/" target="_blank" rel="noreferrer">open dashboard ↗</a>
+          </div>
+          <a class="wispr-card" href="https://admin.wisprflow.ai/" target="_blank" rel="noreferrer" aria-label="Open Wispr Flow dashboard">
+            <div class="wispr-top">
+              <strong id="wispr-current-streak">8 day streak</strong>
+              <span>LONGEST STREAK | <b id="wispr-longest-streak">18 DAYS</b></span>
+            </div>
+            <div class="wispr-months"><span>‹</span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>›</span></div>
+            <div class="wispr-chart">
+              <div class="wispr-days" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+              <div class="wispr-grid" id="wispr-grid" aria-label="Wispr Flow streak calendar"></div>
+            </div>
+            <div class="wispr-foot">
+              <div class="wispr-legend"><span>More</span><i class="s4"></i><i class="s3"></i><i class="s2"></i><i class="s1"></i><span>Less</span></div>
+              <div class="wispr-current"><i></i><span>Current streak</span></div>
+            </div>
+          </a>
         </section>
       </div>
     </div>
@@ -285,6 +340,16 @@
         </div>
 
         <aside class="specs">
+          <figure class="about-portrait about-portrait--sidebar">
+            <img
+              src="assets/adrian-pixel.png"
+              alt="Pixel art portrait of Adrian Muñoz in a suit and checkered shirt."
+              width="320"
+              height="320"
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
           <div class="spec-card">
             <div class="spec-hd">/ SPEC_SHEET</div>
             <div class="spec-row"><span>CLASS</span><span>SOFTWARE ENG</span></div>
@@ -304,14 +369,14 @@
           </div>
 
           <div class="spec-card">
-            <div class="spec-hd">/ TOOLKIT</div>
+            <div class="spec-hd">/ SOCIAL</div>
             <div class="inv">
-              <div class="slot" title="Linux">LX</div>
-              <div class="slot" title="Docker">DK</div>
-              <div class="slot" title="Git">GT</div>
-              <div class="slot" title="ROS2">R2</div>
-              <div class="slot" title="PostgreSQL">PG</div>
-              <div class="slot" title="AWS">AWS</div>
+              <a class="slot" href="https://www.linkedin.com/in/adrian---munoz" target="_blank" rel="noopener noreferrer" title="LinkedIn">in</a>
+              <a class="slot" href="https://www.instagram.com/technicaldree/" target="_blank" rel="noopener noreferrer" title="Instagram">IG</a>
+              <a class="slot" href="https://discord.com" target="_blank" rel="noopener noreferrer" title="Discord">DC</a>
+              <a class="slot" href="https://open.spotify.com/user/technicaldree" target="_blank" rel="noopener noreferrer" title="Spotify">SP</a>
+              <a class="slot" href="https://www.reddit.com/user/TechnicalDree/" target="_blank" rel="noopener noreferrer" title="Reddit">RD</a>
+              <a class="slot" href="https://github.com/TechnicalDree" target="_blank" rel="noopener noreferrer" title="GitHub">GH</a>
             </div>
           </div>
         </aside>
@@ -415,6 +480,8 @@
   </template>
 
 <script src="assets/github-history.js"></script>
+<script src="assets/monkeytype-history.js"></script>
+<script src="assets/dashboard-snapshots.js"></script>
 <script src="assets/bg.js"></script>
 <script src="assets/app.js"></script>
 </body>
