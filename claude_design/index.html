@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AVA.SPRITE // PERSONAL TERMINAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="vignette"></div>
+  <div class="scanlines"></div>
+
+  <div class="stage">
+    <div class="unit">
+      <!-- LEFT: profile / nav -->
+      <aside class="left">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+
+        <div class="portrait">
+          <div class="avatar"><canvas id="avatar" width="64" height="64"></canvas></div>
+          <div class="name">Adrian Muñoz</div>
+          <div class="handle">@a3rean</div>
+          <div class="bio">// software engineer</div>
+        </div>
+
+        <div class="status-grid">
+          <div class="stat"><span class="k">linkedin</span><span class="v" id="uptime">00:00:00</span></div>
+          <div class="stat"><span class="k">PING</span><span class="v">12 ms</span></div>
+          <div class="stat"><span class="k">LINK</span><span class="v ok">● SECURE</span></div>
+          <div class="stat"><span class="k">LOC</span><span class="v">35.6°N</span></div>
+        </div>
+
+        <nav class="nav">
+          <div class="nav-label">// SYSTEM_MENU</div>
+          <button class="nav-item active" data-view="home">
+            <span class="num">[00]</span><span class="lbl">HOME</span><span class="dot"></span>
+          </button>
+          <button class="nav-item" data-view="projects">
+            <span class="num">[01]</span><span class="lbl">PROJECTS</span><span class="dot"></span>
+          </button>
+          <button class="nav-item" data-view="about">
+            <span class="num">[02]</span><span class="lbl">ABOUT</span><span class="dot"></span>
+          </button>
+          <button class="nav-item" data-view="log">
+            <span class="num">[03]</span><span class="lbl">EXPERIENCE </span><span class="dot"></span>
+          </button>
+          <button class="nav-item" data-view="gallery">
+            <span class="num">[04]</span><span class="lbl">GALLERY</span><span class="dot"></span>
+          </button>
+          <button class="nav-item" data-view="contact">
+            <span class="num">[05]</span><span class="lbl">CONTACT</span><span class="dot"></span>
+          </button>
+        </nav>
+
+        <div class="mini-bars">
+          <div class="bar"><span class="bl">CPU</span><div class="track"><div class="fill cyan" style="width:62%"></div></div><span class="bv">62%</span></div>
+          <div class="bar"><span class="bl">MEM</span><div class="track"><div class="fill mag" style="width:78%"></div></div><span class="bv">78%</span></div>
+          <div class="bar"><span class="bl">NET</span><div class="track"><div class="fill yel" style="width:41%"></div></div><span class="bv">41%</span></div>
+        </div>
+
+        <div class="floppy">
+          <div class="floppy-label">SAVE.DAT</div>
+          <div class="floppy-shutter"></div>
+        </div>
+      </aside>
+
+      <!-- RIGHT: terminal screen -->
+      <main class="term">
+        <div class="term-chrome">
+          <div class="chrome-dots"><span></span><span></span><span></span></div>
+          <div class="chrome-title">adrian-OS v4.2.1 // /home/ava/ <span id="crumb">~</span></div>
+          <div class="chrome-meta"><span id="clock">00:00:00</span> · <span class="blink">REC</span></div>
+        </div>
+        <div class="term-bezel">
+          <div class="term-screen" id="screen">
+            <!-- views injected here -->
+          </div>
+          <div class="term-footer">
+            <span class="prompt">adrian@neo-kyoto:~$</span>
+            <span class="cmdline" id="cmd">cat ./home.txt</span><span class="caret">▊</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- VIEW TEMPLATES -->
+  <template id="tpl-home">
+    <div class="view view-home">
+      <pre class="ascii-banner">
+    _    ____  ____  ___    _    _   _     __  __ _   _ _   _  ___ _____
+   / \  |  _ \|  _ \|_ _|  / \  | \ | |   |  \/  | | | | \ | |/ _ \__  /
+  / _ \ | | | | |_) || |  / _ \ |  \| |   | |\/| | | | |  \| | | | |/ /
+ / ___ \| |_| |  _ < | | / ___ \| |\  |   | |  | | |_| | |\  | |_| / /_
+/_/   \_\____/|_| \_\___/_/   \_\_| \_|   |_|  |_|\___/|_| \_|\___/____|</pre>
+      <div class="row-head">
+        <span class="tag tag-cyan">&gt;_ whoami</span>
+        <span class="tag tag-mag">ACCESS: ROOT</span>
+      </div>
+      <h1 class="glitch" data-text="I make interfaces that feel alive.">I make interfaces<br>that feel <span class="hl">alive</span>.</h1>
+      <p class="lede">
+        Designer + engineer building <span class="u-cy">kinetic UIs</span>, <span class="u-mg">synthwave tooling</span>,
+        and the occasional <span class="u-yl">pixel-art easter egg</span>. Currently cooking at <b>NULLBYTE.CO</b>.
+      </p>
+
+      <div class="kv">
+        <div><span class="kvk">STATUS</span><span class="kvv ok">● AVAILABLE FOR CONTRACT</span></div>
+        <div><span class="kvk">STACK</span><span class="kvv">TS · React · Svelte · Rust · Canvas · GLSL</span></div>
+        <div><span class="kvk">TZ</span><span class="kvv">UTC+09 / NEO-KYOTO</span></div>
+        <div><span class="kvk">UPDATED</span><span class="kvv">2077.03.14 // 04:17</span></div>
+      </div>
+
+      <div class="quick-actions">
+        <button class="btn btn-cy" data-nav="projects">▶ BROWSE PROJECTS</button>
+        <button class="btn btn-mg" data-nav="contact">◆ OPEN_COMMS</button>
+        <button class="btn btn-ghost" data-nav="about">≡ ABOUT.ME</button>
+      </div>
+
+      <div class="ticker">
+        <span>// now playing: <b>anamanaguchi — endless fantasy</b></span>
+        <span>// reading: <b>neuromancer</b></span>
+        <span>// shipped: <b>GLITCHPAD v0.9</b></span>
+        <span>// brewing: <b>iced oat matcha x2</b></span>
+      </div>
+
+      <div class="panels">
+        <section class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">◆ GITHUB // @TechnicalDree</span>
+            <span class="panel-meta">1,284 contributions · last year</span>
+          </div>
+          <div class="gh-grid" id="gh-grid"></div>
+          <div class="gh-legend">
+            <span>less</span>
+            <span class="sw s0"></span><span class="sw s1"></span><span class="sw s2"></span><span class="sw s3"></span><span class="sw s4"></span>
+            <span>more</span>
+          </div>
+          <ul class="gh-commits">
+            <li><span class="cdate">04-22</span><span class="crepo">neon-runner</span> feat: CRT shader overlay + dither matrix</li>
+            <li><span class="cdate">04-21</span><span class="crepo">dotfiles</span> chore: bump neovim + add tmux popup</li>
+            <li><span class="cdate">04-19</span><span class="crepo">glitchpad</span> fix: off-by-one in Bayer threshold</li>
+            <li><span class="cdate">04-17</span><span class="crepo">nullbyte-os</span> refactor: move palette into shared crate</li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">◆ MONKEYTYPE // @TechnicalDree</span>
+            <span class="panel-meta">PB 142 wpm · avg 118 · 412 tests</span>
+          </div>
+          <div class="mk-stats">
+            <div class="mk-stat"><span class="mkk">WPM</span><span class="mkv">118<small>avg</small></span></div>
+            <div class="mk-stat"><span class="mkk">ACC</span><span class="mkv">97.4<small>%</small></span></div>
+            <div class="mk-stat"><span class="mkk">PB</span><span class="mkv">142<small>wpm</small></span></div>
+            <div class="mk-stat"><span class="mkk">TESTS</span><span class="mkv">412<small></small></span></div>
+          </div>
+          <canvas id="mk-chart" width="280" height="80"></canvas>
+          <ul class="mk-recent">
+            <li><span class="mt-mode">60s · english</span><span class="mt-wpm">134 wpm</span><span class="mt-acc">98%</span></li>
+            <li><span class="mt-mode">30s · english</span><span class="mt-wpm">128 wpm</span><span class="mt-acc">97%</span></li>
+            <li><span class="mt-mode">words 50</span><span class="mt-wpm">121 wpm</span><span class="mt-acc">96%</span></li>
+            <li><span class="mt-mode">60s · code_js</span><span class="mt-wpm">92 wpm</span><span class="mt-acc">94%</span></li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-projects">
+    <div class="view view-projects">
+      <div class="row-head">
+        <span class="tag tag-cyan">&gt;_ ls ./projects</span>
+        <span class="tag tag-mag">04 ENTRIES</span>
+      </div>
+      <h2 class="h2">PROJECTS // SELECTED_WORKS</h2>
+
+      <div class="prj-grid">
+        <article class="prj">
+          <div class="prj-thumb" data-thumb="glitchpad"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[01]</span><span class="tag tag-cyan">SHIPPED</span></div>
+            <h3>GLITCHPAD</h3>
+            <p>Collaborative pixel-art canvas with real-time CRDT sync and a built-in synth. 12k users / week.</p>
+            <div class="prj-chips"><span>Rust</span><span>WASM</span><span>WebGL</span></div>
+          </div>
+        </article>
+        <article class="prj">
+          <div class="prj-thumb" data-thumb="nullbyte"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[02]</span><span class="tag tag-yel">LIVE</span></div>
+            <h3>NULLBYTE.OS</h3>
+            <p>Terminal-first design tool for retro games. Think Figma, but everything is keystrokes.</p>
+            <div class="prj-chips"><span>TS</span><span>Svelte</span><span>Tauri</span></div>
+          </div>
+        </article>
+        <article class="prj">
+          <div class="prj-thumb" data-thumb="neon"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[03]</span><span class="tag tag-mag">BETA</span></div>
+            <h3>NEONWIRE</h3>
+            <p>Fiber-optic network visualizer. Streams telemetry from 2,400 edge nodes into an iso city.</p>
+            <div class="prj-chips"><span>Three.js</span><span>GLSL</span><span>Go</span></div>
+          </div>
+        </article>
+        <article class="prj">
+          <div class="prj-thumb" data-thumb="sprite"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[04]</span><span class="tag tag-ghost">ARCHIVED</span></div>
+            <h3>SPRITEFORGE</h3>
+            <p>Open-source palette-aware sprite editor. Still runs the indie scene on itch.io.</p>
+            <div class="prj-chips"><span>C++</span><span>SDL2</span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-about">
+    <div class="view view-about">
+      <div class="row-head">
+        <span class="tag tag-cyan">&gt;_ cat ./about.log</span>
+        <span class="tag tag-mag">BIO.TXT</span>
+      </div>
+      <h2 class="h2">ABOUT // OPERATOR_FILE</h2>
+
+      <div class="about-grid">
+        <div>
+          <p class="lede">
+            I've been making things on screens since a beige PC and a copy of Deluxe Paint II.
+            Today I build <span class="u-cy">design systems</span> and <span class="u-mg">weird little tools</span>
+            for studios that care about feel, not just function.
+          </p>
+          <p class="body">
+            Before this I led design at <b>KAIJU LABS</b>, where I shipped the typeface &amp; component kit
+            powering the studio's 14 games. Before <em>that</em>: four years making audio plugins,
+            two years teaching motion at SVA, one very long summer rebuilding my own Amiga 500.
+          </p>
+
+          <div class="quote">
+            <span class="q-mark">"</span>
+            <p>Good interfaces are a conversation. Great ones feel like the machine is in on the joke.</p>
+          </div>
+
+          <h3 class="sub">PRINCIPLES</h3>
+          <ul class="bullet">
+            <li>Motion should explain, not decorate.</li>
+            <li>Every pixel is a choice. Including the ones you didn't make.</li>
+            <li>Ship small, ship often, apologize later.</li>
+            <li>If it bleeps, it better mean it.</li>
+          </ul>
+        </div>
+
+        <aside class="specs">
+          <div class="spec-card">
+            <div class="spec-hd">/ SPEC_SHEET</div>
+            <div class="spec-row"><span>CLASS</span><span>DESIGN-ENG</span></div>
+            <div class="spec-row"><span>LVL</span><span>28</span></div>
+            <div class="spec-row"><span>ORIGIN</span><span>OSAKA ➝ NK</span></div>
+            <div class="spec-row"><span>HP</span><span>218 / 240</span></div>
+            <div class="spec-row"><span>MP</span><span>∞</span></div>
+          </div>
+
+          <div class="spec-card">
+            <div class="spec-hd">/ SKILLS</div>
+            <div class="skill"><span>INTERFACE</span><div class="tr"><div style="width:92%" class="fi cy"></div></div></div>
+            <div class="skill"><span>MOTION</span><div class="tr"><div style="width:84%" class="fi mg"></div></div></div>
+            <div class="skill"><span>SHADERS</span><div class="tr"><div style="width:61%" class="fi yl"></div></div></div>
+            <div class="skill"><span>TYPE</span><div class="tr"><div style="width:78%" class="fi cy"></div></div></div>
+            <div class="skill"><span>SYSTEMS</span><div class="tr"><div style="width:88%" class="fi mg"></div></div></div>
+          </div>
+
+          <div class="spec-card">
+            <div class="spec-hd">/ INVENTORY</div>
+            <div class="inv">
+              <div class="slot" title="Mechanical kbd">⌨</div>
+              <div class="slot" title="Trackball">◉</div>
+              <div class="slot" title="Walkman">♫</div>
+              <div class="slot" title="Notebook">▭</div>
+              <div class="slot" title="Ramen">🍜</div>
+              <div class="slot empty"></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-log">
+    <div class="view view-log">
+      <div class="row-head">
+        <span class="tag tag-cyan">&gt;_ tail -f ./log</span>
+        <span class="tag tag-mag">LIVE</span>
+      </div>
+      <h2 class="h2">WORK EXPERIENCE</h2>
+
+      <ol class="timeline">
+        <li>
+          <span class="ts">2077.03.14 / 04:17</span>
+          <span class="ev ev-ship">SHIP</span>
+          <div class="ev-body"><b>GLITCHPAD 1.0</b> — pushed stable. Collab rooms, new synth engine, CRDT rewrite.</div>
+        </li>
+        <li>
+          <span class="ts">2077.03.02 / 22:40</span>
+          <span class="ev ev-talk">TALK</span>
+          <div class="ev-body"><b>"Interfaces that feel alive"</b> @ <i>PixelFest NK</i>. Slides + recording on the way.</div>
+        </li>
+        <li>
+          <span class="ts">2077.02.20 / 11:05</span>
+          <span class="ev ev-write">WRITE</span>
+          <div class="ev-body"><b>Notes on dithered gradients</b> — a deep dive on 8-color Bayer matrices for UI.</div>
+        </li>
+        <li>
+          <span class="ts">2077.02.04 / 15:22</span>
+          <span class="ev ev-ship">SHIP</span>
+          <div class="ev-body"><b>NEONWIRE β</b> — 2.4k nodes streaming into a procedurally-lit city.</div>
+        </li>
+        <li>
+          <span class="ts">2077.01.18 / 09:00</span>
+          <span class="ev ev-join">JOIN</span>
+          <div class="ev-body">Started as design-eng lead at <b>NULLBYTE.CO</b>. Tools, tools, tools.</div>
+        </li>
+        <li>
+          <span class="ts">2076.12.30 / 23:58</span>
+          <span class="ev ev-write">WRITE</span>
+          <div class="ev-body">Year-end review: <b>47 projects started, 11 shipped, 0 regrets</b>.</div>
+        </li>
+      </ol>
+    </div>
+  </template>
+
+  <template id="tpl-gallery">
+    <div class="view view-gallery">
+      <div class="row-head">
+        <span class="tag tag-cyan">&gt;_ open ./gallery</span>
+        <span class="tag tag-mag">09 FRAMES</span>
+      </div>
+      <h2 class="h2">GALLERY // PIXEL_DUMP</h2>
+      <div class="gal">
+        <div class="frame" data-pat="city"></div>
+        <div class="frame" data-pat="moon"></div>
+        <div class="frame" data-pat="sun"></div>
+        <div class="frame" data-pat="ship"></div>
+        <div class="frame" data-pat="robo"></div>
+        <div class="frame" data-pat="cat"></div>
+        <div class="frame" data-pat="glyph"></div>
+        <div class="frame" data-pat="arcade"></div>
+        <div class="frame" data-pat="grid"></div>
+      </div>
+      <p class="caption">// sprites drawn in SPRITEFORGE. 4-color NK palette. CC-BY-NC.</p>
+    </div>
+  </template>
+
+  <template id="tpl-contact">
+    <div class="view view-contact">
+      <div class="row-head">
+        <span class="tag tag-cyan">&gt;_ open_comms --secure</span>
+        <span class="tag tag-mag">CHANNEL OPEN</span>
+      </div>
+      <h2 class="h2">CONTACT // UPLINK</h2>
+
+      <div class="contact-grid">
+        <form class="uplink" onsubmit="event.preventDefault(); this.querySelector('.sent').style.display='block'; this.querySelector('button').textContent='▶ TRANSMITTED';">
+          <label><span class="lab">// HANDLE</span><input type="text" placeholder="enter_your_handle_" required></label>
+          <label><span class="lab">// CHANNEL</span><input type="email" placeholder="you@somewhere.net" required></label>
+          <label><span class="lab">// PAYLOAD</span><textarea rows="5" placeholder="type message, hit TRANSMIT..." required></textarea></label>
+          <button type="submit" class="btn btn-cy">▶ TRANSMIT</button>
+          <div class="sent" style="display:none;">✓ packet queued · ETA 2h</div>
+        </form>
+
+        <div class="channels">
+          <a class="chan" href="#"><span class="c-icon">@</span><span><b>mail</b><em>ava@nullbyte.co</em></span></a>
+          <a class="chan" href="#"><span class="c-icon">⌘</span><span><b>github</b><em>/ava-sprite</em></span></a>
+          <a class="chan" href="#"><span class="c-icon">✦</span><span><b>bsky</b><em>@ava.sprite</em></span></a>
+          <a class="chan" href="#"><span class="c-icon">♪</span><span><b>soundcloud</b><em>/neon_runner</em></span></a>
+          <a class="chan" href="#"><span class="c-icon">▭</span><span><b>itch</b><em>ava-sprite.itch.io</em></span></a>
+          <div class="chan disabled"><span class="c-icon">☎</span><span><b>phone</b><em>by appointment</em></span></div>
+        </div>
+      </div>
+
+      <div class="disclaimer">// all packets routed through tor-3. PGP fingerprint: 4F2A · 88E1 · 9D00 · C71F · 2277</div>
+    </div>
+  </template>
+
+<script src="assets/bg.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

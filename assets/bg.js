@@ -1,12 +1,16 @@
-// Pixel synthwave city — high-detail edition.
-// Renders at 640x360, scaled up via image-rendering: pixelated.
+// Pixel synthwave city — signature skyline edition.
+// Renders the 640x360 artboard into a dense backing canvas for sharper pixel detail.
 (function () {
   const canvas = document.getElementById('bg');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = 640, H = 360;
-  canvas.width = W;
-  canvas.height = H;
+  const RENDER_SCALE = 3;
+  let citySpeed = 1;
+  let cityT = 0;
+  canvas.width = W * RENDER_SCALE;
+  canvas.height = H * RENDER_SCALE;
+  ctx.imageSmoothingEnabled = false;
 
   function fit() {
     canvas.style.width = window.innerWidth + 'px';
@@ -14,6 +18,21 @@
   }
   fit();
   window.addEventListener('resize', fit);
+
+  const speedInput = document.getElementById('city-speed');
+  const speedValue = document.getElementById('city-speed-value');
+  function setCitySpeed(value) {
+    citySpeed = Math.max(0, Math.min(2.5, Number(value) || 0));
+    if (speedValue) speedValue.textContent = `${citySpeed.toFixed(1)}x`;
+    try { localStorage.setItem('citySpeed', String(citySpeed)); } catch (_) {}
+  }
+  if (speedInput) {
+    let savedSpeed = null;
+    try { savedSpeed = localStorage.getItem('citySpeed'); } catch (_) {}
+    if (savedSpeed !== null) speedInput.value = savedSpeed;
+    setCitySpeed(speedInput.value);
+    speedInput.addEventListener('input', () => setCitySpeed(speedInput.value));
+  }
 
   // ---------- PALETTE ----------
   const COL = {
@@ -28,7 +47,10 @@
     mag:  '#ff4ad6',
     magDk:'#a91e8c',
     pink: '#ff8fd2',
+    violet: '#9d6bff',
+    blue: '#4d7dff',
     yel:  '#ffe66d',
+    amber:'#ffc04d',
     org:  '#ff8a3a',
     red:  '#ff4060',
     wht:  '#ffffff',
@@ -43,15 +65,20 @@
     streetMid:  '#180630',
   };
 
-  // 4x4 Bayer matrix for dithered gradients
+  // 8x8 Bayer matrix gives richer "more bits" gradients without smoothing.
   const BAYER = [
-    [ 0, 8, 2,10],
-    [12, 4,14, 6],
-    [ 3,11, 1, 9],
-    [15, 7,13, 5],
+    [ 0,32, 8,40, 2,34,10,42],
+    [48,16,56,24,50,18,58,26],
+    [12,44, 4,36,14,46, 6,38],
+    [60,28,52,20,62,30,54,22],
+    [ 3,35,11,43, 1,33, 9,41],
+    [51,19,59,27,49,17,57,25],
+    [15,47, 7,39,13,45, 5,37],
+    [63,31,55,23,61,29,53,21],
   ];
   function lerp(a,b,t){return a+(b-a)*t;}
   function mix(c1,c2,t){return [lerp(c1[0],c2[0],t),lerp(c1[1],c2[1],t),lerp(c1[2],c2[2],t)];}
+  function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
 
   // ---------- STARS (multi-layer) ----------
   const stars = [];
@@ -68,18 +95,33 @@
 
   // ---------- BUILDINGS ----------
   // Each building has a deterministic seed for windows so they don't reshuffle every frame.
+  const BUILDING_NAMES = ['MUNOZ', 'DREE', 'AETHER', 'KAI', 'NOVA', 'CMU', 'BYTE', 'ORBIT', 'VOLT', 'LUMA', 'NEON', 'ATLAS', 'NOODLE'];
+  const WINDOW_PALETTES = [
+    [COL.yel, COL.amber, '#fff0b8'],
+    [COL.cyan, COL.blue, '#b9fff7'],
+    [COL.pink, COL.mag, COL.violet],
+    [COL.org, COL.red, COL.amber],
+    [COL.grnLed, COL.cyan, COL.yel],
+  ];
   function mkLayer(opts) {
     const out = [];
     let x = -10;
     while (x < W + 20) {
       const w = (opts.wMin + Math.random() * (opts.wMax - opts.wMin)) | 0;
       const h = (opts.hMin + Math.random() * (opts.hMax - opts.hMin)) | 0;
+      const kinds = ['block', 'pyramid', 'tower', 'spire', 'slant', 'pagoda', 'notched', 'needle'];
       const b = {
         x, y: opts.baseY - h, w, h,
         color: opts.color,
         accent: Math.random() < 0.5 ? COL.mag : COL.cyan,
         windows: [],
-        kind: Math.random() < 0.15 ? 'tower' : (Math.random() < 0.3 ? 'pyramid' : 'block'),
+        kind: kinds[(Math.random() * kinds.length) | 0],
+        ribs: Math.random() < 0.55,
+        crown: Math.random() < 0.45,
+        windowStyle: pick(['sparse', 'stripes', 'clusters', 'vertical', 'lobby']),
+        palette: pick(WINDOW_PALETTES),
+        skybridge: null,
+        lightBands: [],
         sign: null,
         rooftop: [],
       };
@@ -92,14 +134,13 @@
       const rows = Math.max(1, Math.floor((h - 6) / (winH + gapY)));
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          if (Math.random() < opts.winDensity) {
-            // Window color biased per building
-            const roll = Math.random();
-            let col;
-            if (roll < 0.55) col = COL.yel;
-            else if (roll < 0.75) col = COL.cyan;
-            else if (roll < 0.9) col = COL.pink;
-            else col = COL.org;
+          let density = opts.winDensity;
+          if (b.windowStyle === 'stripes') density *= (r % 3 === 0) ? 1.75 : 0.32;
+          if (b.windowStyle === 'clusters') density *= ((c + r) % 4 < 2) ? 1.35 : 0.22;
+          if (b.windowStyle === 'vertical') density *= (c % 3 === 0) ? 1.55 : 0.28;
+          if (b.windowStyle === 'lobby') density *= r > rows * 0.7 ? 1.65 : 0.38;
+          if (Math.random() < density) {
+            const col = pick(b.palette);
             b.windows.push({
               x: b.x + 2 + c * (winW + gapX),
               y: b.y + 4 + r * (winH + gapY),
@@ -107,9 +148,20 @@
               color: col,
               phase: Math.random() * Math.PI * 2,
               speed: 0.005 + Math.random() * 0.04,
-              alwaysOn: Math.random() < 0.55,
+              alwaysOn: Math.random() < 0.28,
             });
           }
+        }
+      }
+      if (h > 55 && Math.random() < 0.5) {
+        const bandCount = 1 + ((Math.random() * 2) | 0);
+        for (let i = 0; i < bandCount; i++) {
+          b.lightBands.push({
+            y: b.y + 10 + ((Math.random() * Math.max(8, h - 24)) | 0),
+            h: Math.random() < 0.6 ? 1 : 2,
+            color: pick([b.accent, COL.cyanDk, COL.magDk, COL.amber, COL.violet]),
+            alpha: 0.22 + Math.random() * 0.25,
+          });
         }
       }
       // Rooftop antenna / dish / sign
@@ -135,14 +187,23 @@
           }
         }
       }
+      if (h > 70 && w > 28 && Math.random() < 0.28) {
+        b.skybridge = {
+          y: b.y + 18 + ((Math.random() * Math.max(12, h * 0.35)) | 0),
+          w: 10 + ((Math.random() * 18) | 0),
+          h: 4 + ((Math.random() * 3) | 0),
+          side: Math.random() < 0.5 ? -1 : 1,
+        };
+      }
       // Holographic sign on bigger buildings
-      if (h > 60 && w > 26 && Math.random() < 0.35) {
-        const signs = ['NEO', 'SIN', 'BAR', 'RAMEN', 'ICE', 'NULL', 'ZERO', '88', 'KAI', 'MAX', 'LIVE', 'BIT'];
+      if (h > 60 && w > 26 && Math.random() < 0.48) {
+        const signs = Math.random() < 0.55 ? BUILDING_NAMES : ['NEO', 'SIN', 'BAR', 'RAMEN', 'ICE', 'NULL', 'ZERO', '88', 'KAI', 'MAX', 'LIVE', 'BIT'];
         b.sign = {
           text: signs[(Math.random() * signs.length) | 0],
           y: b.y + 8 + (Math.random() * (h - 30)) | 0,
           color: Math.random() < 0.5 ? COL.mag : (Math.random() < 0.5 ? COL.cyan : COL.yel),
           flicker: Math.random() * Math.PI * 2,
+          vertical: Math.random() < 0.38,
         };
       }
       out.push(b);
@@ -154,25 +215,25 @@
   // 4 building layers for parallax depth
   const layer1 = mkLayer({ // farthest, behind moon
     wMin: 8, wMax: 18, hMin: 22, hMax: 55, baseY: 200,
-    color: COL.bld1, winDensity: 0.32,
+    color: COL.bld1, winDensity: 0.2,
     winW: 2, winH: 2, gapX: 2, gapY: 2,
     gapMin: 1, gapRange: 3,
   });
   const layer2 = mkLayer({
     wMin: 14, wMax: 26, hMin: 35, hMax: 90, baseY: 230,
-    color: COL.bld2, winDensity: 0.4,
+    color: COL.bld2, winDensity: 0.26,
     winW: 2, winH: 3, gapX: 2, gapY: 2,
     gapMin: 2, gapRange: 4,
   });
   const layer3 = mkLayer({
     wMin: 22, wMax: 42, hMin: 60, hMax: 130, baseY: 265,
-    color: COL.bld3, winDensity: 0.42,
+    color: COL.bld3, winDensity: 0.28,
     winW: 3, winH: 3, gapX: 2, gapY: 3,
     gapMin: 3, gapRange: 5,
   });
   const layer4 = mkLayer({ // closest
     wMin: 36, wMax: 70, hMin: 80, hMax: 180, baseY: 305,
-    color: COL.bld4, winDensity: 0.4,
+    color: COL.bld4, winDensity: 0.26,
     winW: 3, winH: 4, gapX: 3, gapY: 3,
     gapMin: 4, gapRange: 8,
   });
@@ -232,7 +293,7 @@
   for (let i = 0; i < 14; i++) {
     people.push({
       x: Math.random() * W,
-      sp: (Math.random() < 0.5 ? -1 : 1) * (0.18 + Math.random() * 0.28),
+      sp: (Math.random() < 0.5 ? -1 : 1) * (0.06 + Math.random() * 0.12),
       y: SIDEWALK_Y + (Math.random() < 0.5 ? -2 : 0), // upper or lower sidewalk row
       hatColor: pickPersonColor(),
       bodyColor: pickPersonColor(),
@@ -258,6 +319,23 @@
     });
   }
 
+  const buses = [
+    { x: -90, y: STREET_Y + 20, sp: 0.28, body: COL.bld5, stripe: COL.yel, route: '88' },
+    { x: W + 120, y: STREET_Y + 7, sp: -0.22, body: COL.bld4, stripe: COL.cyan, route: 'NK' },
+  ];
+
+  const streetProps = [
+    { kind: 'trafficLight', x: 78, y: SIDEWALK_Y - 25, phase: 0 },
+    { kind: 'trafficLight', x: 562, y: SIDEWALK_Y - 25, phase: 42 },
+    { kind: 'subway', x: 416, y: SIDEWALK_Y - 33, label: 'MTR' },
+    { kind: 'busStop', x: 518, y: SIDEWALK_Y - 27, label: 'BUS' },
+    { kind: 'door', x: 34, y: SIDEWALK_Y - 30, label: '24H' },
+    { kind: 'door', x: 172, y: SIDEWALK_Y - 28, label: 'BAR' },
+    { kind: 'door', x: 296, y: SIDEWALK_Y - 29, label: 'RAM' },
+    { kind: 'sign', x: 246, y: SIDEWALK_Y - 42, label: 'OPEN' },
+    { kind: 'sign', x: 360, y: SIDEWALK_Y - 46, label: 'NOODLES' },
+  ];
+
   // ---------- SHOOTING STARS ----------
   const shoots = [];
 
@@ -278,7 +356,7 @@
     else               col = [12, 4, 30];
 
     for (let x = 0; x < W; x++) {
-      const b = BAYER[y & 3][x & 3] - 7.5;
+      const b = (BAYER[y & 7][x & 7] - 31.5) / 4;
       const i = (y * W + x) * 4;
       skyImg.data[i]   = Math.max(0, Math.min(255, col[0] + b * 0.7));
       skyImg.data[i+1] = Math.max(0, Math.min(255, col[1] + b * 0.7));
@@ -322,7 +400,7 @@
     for (let dx = -moon.r; dx <= moon.r; dx++) {
       const d2 = dx*dx + dy*dy;
       if (d2 > moon.r * moon.r) continue;
-      const bd = BAYER[(moon.y+dy) & 3][(moon.x+dx) & 3];
+      const bd = BAYER[(moon.y + dy) & 7][(moon.x + dx) & 7];
       let c;
       if (d2 > (moon.r-2)*(moon.r-2)) c = '#ffd0a0';
       else if (bd > 7) c = '#fff0d0';
@@ -415,9 +493,28 @@
     ctx.globalAlpha = 1;
   }
 
-  function drawBuilding(b, t, parallax) {
-    const ox = -((t * parallax) % (W + 200));
-    const x = b.x; // we keep buildings static, parallax handled via scrolling layer separately if desired
+  function drawBuildingName(x, y, text, color, t, flicker, vertical) {
+    const pulse = 0.7 + 0.3 * Math.sin(t * 0.035 + flicker);
+    ctx.save();
+    ctx.font = '6px "Share Tech Mono", monospace';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = color;
+    ctx.globalAlpha = Math.max(0.42, pulse);
+    if (vertical) {
+      for (let i = 0; i < text.length; i++) {
+        ctx.fillText(text[i], x, y + i * 6);
+      }
+      ctx.globalAlpha = 0.18;
+      ctx.fillRect(x - 2, y - 1, 8, text.length * 6 + 1);
+    } else {
+      ctx.fillText(text, x, y);
+      ctx.globalAlpha = 0.2;
+      ctx.fillRect(x - 1, y - 1, Math.min(text.length * 5 + 3, 38), 8);
+    }
+    ctx.restore();
+  }
+
+  function drawBuildingBody(b) {
     // body
     ctx.fillStyle = b.color;
     if (b.kind === 'pyramid') {
@@ -428,9 +525,57 @@
       for (let s = 0; s < steps; s++) {
         ctx.fillRect(b.x + s * stepDx, b.y + s * stepH, b.w - s * stepDx * 2, stepH + 1);
       }
+    } else if (b.kind === 'spire') {
+      const cap = Math.max(8, (b.h * 0.18) | 0);
+      ctx.fillRect(b.x, b.y + cap, b.w, b.h - cap);
+      ctx.beginPath();
+      ctx.moveTo(b.x + ((b.w / 2) | 0), b.y);
+      ctx.lineTo(b.x + b.w, b.y + cap);
+      ctx.lineTo(b.x, b.y + cap);
+      ctx.closePath();
+      ctx.fill();
+    } else if (b.kind === 'slant') {
+      const lean = Math.max(4, (b.w * 0.22) | 0);
+      ctx.beginPath();
+      ctx.moveTo(b.x + lean, b.y);
+      ctx.lineTo(b.x + b.w, b.y + Math.max(3, lean / 2));
+      ctx.lineTo(b.x + b.w, b.y + b.h);
+      ctx.lineTo(b.x, b.y + b.h);
+      ctx.closePath();
+      ctx.fill();
+    } else if (b.kind === 'pagoda') {
+      const tiers = 5;
+      const tierH = Math.max(5, (b.h / tiers) | 0);
+      for (let s = 0; s < tiers; s++) {
+        const inset = Math.min((b.w * 0.28) | 0, s * 2);
+        const overhang = s % 2 === 0 ? 2 : 0;
+        ctx.fillRect(b.x + inset - overhang, b.y + s * tierH, b.w - inset * 2 + overhang * 2, tierH + 1);
+        ctx.fillStyle = b.accent;
+        ctx.globalAlpha = 0.35;
+        ctx.fillRect(b.x + inset - overhang, b.y + s * tierH, b.w - inset * 2 + overhang * 2, 1);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = b.color;
+      }
+    } else if (b.kind === 'notched') {
+      const notchW = Math.max(6, (b.w * 0.25) | 0);
+      const notchH = Math.max(8, (b.h * 0.12) | 0);
+      ctx.fillRect(b.x, b.y + notchH, b.w, b.h - notchH);
+      ctx.fillRect(b.x, b.y, ((b.w - notchW) / 2) | 0, notchH + 1);
+      ctx.fillRect(b.x + ((b.w + notchW) / 2), b.y, ((b.w - notchW) / 2) | 0, notchH + 1);
+    } else if (b.kind === 'needle') {
+      const shaftW = Math.max(8, (b.w * 0.45) | 0);
+      const shaftX = b.x + ((b.w - shaftW) / 2 | 0);
+      ctx.fillRect(shaftX, b.y + 8, shaftW, b.h - 8);
+      ctx.fillRect(b.x, b.y + ((b.h * 0.48) | 0), b.w, Math.max(8, (b.h * 0.12) | 0));
+      ctx.fillStyle = b.accent;
+      ctx.fillRect(shaftX + ((shaftW / 2) | 0), b.y - 12, 1, 20);
     } else {
       ctx.fillRect(b.x, b.y, b.w, b.h);
     }
+  }
+
+  function drawBuilding(b, t) {
+    drawBuildingBody(b);
     // accent top
     ctx.fillStyle = b.accent;
     ctx.globalAlpha = 0.55;
@@ -439,6 +584,34 @@
     ctx.fillRect(b.x, b.y, 1, b.h);
     ctx.fillRect(b.x + b.w - 1, b.y, 1, b.h);
     ctx.globalAlpha = 1;
+
+    if (b.ribs) {
+      ctx.fillStyle = b.accent;
+      ctx.globalAlpha = 0.16;
+      for (let rx = b.x + 5; rx < b.x + b.w - 2; rx += 7) {
+        ctx.fillRect(rx, b.y + 3, 1, b.h - 3);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    if (b.crown && b.w > 18) {
+      ctx.fillStyle = b.accent;
+      ctx.globalAlpha = 0.45;
+      for (let cx = b.x + 3; cx < b.x + b.w - 3; cx += 6) {
+        ctx.fillRect(cx, b.y - 2, 3, 2);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    if (b.lightBands.length) {
+      for (let i = 0; i < b.lightBands.length; i++) {
+        const band = b.lightBands[i];
+        ctx.fillStyle = band.color;
+        ctx.globalAlpha = band.alpha;
+        ctx.fillRect(b.x + 1, band.y, Math.max(2, b.w - 2), band.h);
+      }
+      ctx.globalAlpha = 1;
+    }
 
     // windows
     for (let i = 0; i < b.windows.length; i++) {
@@ -456,6 +629,17 @@
       }
     }
     ctx.globalAlpha = 1;
+
+    if (b.skybridge) {
+      const dir = b.skybridge.side;
+      const bx = dir > 0 ? b.x + b.w - 1 : b.x - b.skybridge.w + 1;
+      ctx.fillStyle = COL.cyanDk;
+      ctx.globalAlpha = 0.82;
+      ctx.fillRect(bx, b.skybridge.y, b.skybridge.w, b.skybridge.h);
+      ctx.fillStyle = b.accent;
+      ctx.fillRect(bx, b.skybridge.y, b.skybridge.w, 1);
+      ctx.globalAlpha = 1;
+    }
 
     // rooftop
     for (let i = 0; i < b.rooftop.length; i++) {
@@ -476,7 +660,22 @@
 
     // sign
     if (b.sign) {
-      drawSignText(b.x + 2, b.sign.y, b.sign.text, b.sign.color, t, b.sign.flicker);
+      if (BUILDING_NAMES.includes(b.sign.text)) {
+        const sx = b.sign.vertical ? b.x + Math.max(2, (b.w / 2) | 0) : b.x + 2;
+        drawBuildingName(sx, b.sign.y, b.sign.text, b.sign.color, t, b.sign.flicker, b.sign.vertical);
+      } else {
+        drawSignText(b.x + 2, b.sign.y, b.sign.text, b.sign.color, t, b.sign.flicker);
+      }
+    }
+  }
+
+  function drawScrollingLayer(layer, t, speed) {
+    const shift = (t * speed) % W;
+    for (let copy = -1; copy <= 1; copy++) {
+      ctx.save();
+      ctx.translate(shift + copy * W, 0);
+      layer.forEach(b => drawBuilding(b, t));
+      ctx.restore();
     }
   }
 
@@ -619,7 +818,9 @@
   stc.globalAlpha = 1;
 
   function drawStreet(t) {
-    ctx.drawImage(streetBg, 0, SIDEWALK_Y);
+    const shift = (t * 0.18) % W;
+    ctx.drawImage(streetBg, shift - W, SIDEWALK_Y);
+    ctx.drawImage(streetBg, shift, SIDEWALK_Y);
     // Animated reflective shimmer
     ctx.globalAlpha = 0.05 + 0.05 * Math.sin(t * 0.04);
     ctx.fillStyle = COL.cyan;
@@ -627,12 +828,112 @@
     ctx.globalAlpha = 1;
   }
 
+  function drawTinyLabel(x, y, text, color) {
+    ctx.font = '6px monospace';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+  }
+
+  function drawTrafficLight(x, y, t, phase) {
+    ctx.fillStyle = COL.cyanDk;
+    ctx.fillRect(x + 3, y + 6, 1, 20);
+    ctx.fillRect(x - 2, y + 25, 11, 1);
+    ctx.fillStyle = '#07030f';
+    ctx.fillRect(x, y, 7, 11);
+    ctx.fillStyle = COL.red;
+    ctx.globalAlpha = ((t + phase) % 120) < 44 ? 1 : 0.25;
+    ctx.fillRect(x + 2, y + 1, 3, 2);
+    ctx.fillStyle = COL.yel;
+    ctx.globalAlpha = ((t + phase) % 120) >= 44 && ((t + phase) % 120) < 62 ? 1 : 0.25;
+    ctx.fillRect(x + 2, y + 4, 3, 2);
+    ctx.fillStyle = COL.grnLed;
+    ctx.globalAlpha = ((t + phase) % 120) >= 62 ? 1 : 0.25;
+    ctx.fillRect(x + 2, y + 7, 3, 2);
+    ctx.globalAlpha = 1;
+  }
+
+  function drawSubwayEntrance(x, y, label) {
+    ctx.fillStyle = '#080214';
+    ctx.fillRect(x, y + 17, 34, 15);
+    ctx.fillStyle = COL.cyanDk;
+    ctx.fillRect(x - 3, y + 16, 40, 2);
+    ctx.fillRect(x + 1, y + 20, 30, 1);
+    ctx.fillRect(x + 4, y + 24, 24, 1);
+    ctx.fillRect(x + 7, y + 28, 18, 1);
+    ctx.fillStyle = COL.mag;
+    ctx.fillRect(x + 2, y, 30, 9);
+    ctx.fillStyle = COL.yel;
+    ctx.fillRect(x + 4, y + 2, 26, 5);
+    drawTinyLabel(x + 8, y + 2, label, '#12051f');
+    ctx.fillStyle = COL.cyan;
+    ctx.fillRect(x + 6, y + 9, 22, 2);
+  }
+
+  function drawBusStop(x, y, label) {
+    ctx.fillStyle = COL.cyanDk;
+    ctx.fillRect(x, y, 1, 27);
+    ctx.fillRect(x + 22, y + 4, 1, 23);
+    ctx.fillRect(x, y + 4, 23, 1);
+    ctx.fillRect(x + 2, y + 18, 18, 1);
+    ctx.fillStyle = '#080214';
+    ctx.globalAlpha = 0.62;
+    ctx.fillRect(x + 2, y + 5, 19, 13);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = COL.yel;
+    ctx.fillRect(x - 4, y - 7, 12, 7);
+    drawTinyLabel(x - 3, y - 6, label, '#12051f');
+  }
+
+  function drawDoor(x, y, label) {
+    ctx.fillStyle = '#080214';
+    ctx.fillRect(x, y, 24, 30);
+    ctx.fillStyle = COL.bld5;
+    ctx.fillRect(x + 2, y + 9, 20, 21);
+    ctx.fillStyle = COL.cyanDk;
+    ctx.fillRect(x + 4, y + 12, 7, 12);
+    ctx.fillRect(x + 13, y + 12, 7, 12);
+    ctx.fillStyle = COL.mag;
+    ctx.fillRect(x - 1, y, 26, 8);
+    drawTinyLabel(x + 4, y + 1, label, COL.yel);
+  }
+
+  function drawStreetSign(x, y, label, t) {
+    ctx.fillStyle = COL.cyanDk;
+    ctx.fillRect(x + 2, y + 9, 1, 22);
+    ctx.fillStyle = COL.mag;
+    ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 0.06 + x);
+    ctx.fillRect(x, y, label.length * 4 + 8, 9);
+    ctx.globalAlpha = 1;
+    drawTinyLabel(x + 4, y + 2, label, COL.yel);
+  }
+
+  function drawStreetProp(p, t) {
+    if (p.kind === 'trafficLight') drawTrafficLight(p.x, p.y, t, p.phase);
+    else if (p.kind === 'subway') drawSubwayEntrance(p.x, p.y, p.label);
+    else if (p.kind === 'busStop') drawBusStop(p.x, p.y, p.label);
+    else if (p.kind === 'door') drawDoor(p.x, p.y, p.label);
+    else if (p.kind === 'sign') drawStreetSign(p.x, p.y, p.label, t);
+  }
+
+  function drawStreetProps(t) {
+    const shift = (t * 0.18) % W;
+    for (let copy = -1; copy <= 1; copy++) {
+      ctx.save();
+      ctx.translate(shift + copy * W, 0);
+      for (let i = 0; i < streetProps.length; i++) {
+        drawStreetProp(streetProps[i], t);
+      }
+      ctx.restore();
+    }
+  }
+
   // ---------- PEOPLE ----------
   function drawPerson(p, t) {
     p.x += p.sp;
     if (p.x < -8) p.x = W + 8;
     if (p.x > W + 8) p.x = -8;
-    p.step += Math.abs(p.sp) * 0.6;
+    p.step += Math.abs(p.sp) * 0.35;
     const px = p.x | 0, py = p.y | 0;
     const frame = (p.step | 0) % 4;
     // Hat / hair
@@ -710,6 +1011,34 @@
     ctx.globalAlpha = 1;
   }
 
+  function drawBus(bus, t) {
+    bus.x += bus.sp;
+    if (bus.sp > 0 && bus.x > W + 80) bus.x = -80;
+    if (bus.sp < 0 && bus.x < -80) bus.x = W + 80;
+    const bx = bus.x | 0;
+    const by = bus.y | 0;
+    const dir = bus.sp > 0 ? 1 : -1;
+    ctx.fillStyle = bus.body;
+    ctx.fillRect(bx, by, 44, 11);
+    ctx.fillRect(bx + 4, by - 3, 33, 3);
+    ctx.fillStyle = bus.stripe;
+    ctx.fillRect(bx, by + 8, 44, 1);
+    ctx.fillStyle = COL.yel;
+    for (let x = 5; x < 34; x += 6) ctx.fillRect(bx + x, by + 2, 4, 4);
+    ctx.fillStyle = COL.cyan;
+    ctx.fillRect(bx + (dir > 0 ? 39 : 1), by + 2, 3, 3);
+    ctx.fillStyle = '#05020c';
+    ctx.fillRect(bx + 4, by + 11, 4, 2);
+    ctx.fillRect(bx + 33, by + 11, 4, 2);
+    ctx.fillStyle = COL.mag;
+    ctx.fillRect(bx + 16, by - 2, 10, 2);
+    drawTinyLabel(bx + 17, by - 3, bus.route, COL.yel);
+    ctx.fillStyle = bus.stripe;
+    ctx.globalAlpha = 0.18;
+    ctx.fillRect(bx, by + 15, 44, 5);
+    ctx.globalAlpha = 1;
+  }
+
   // ---------- TRAIN ----------
   // A maglev train along a track in the mid-distance.
   const train = {
@@ -764,6 +1093,9 @@
   let T = 0;
   function frame() {
     T++;
+    cityT += citySpeed;
+    ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
+    ctx.imageSmoothingEnabled = false;
     // sky baseline
     ctx.drawImage(sky, 0, 0);
 
@@ -792,24 +1124,26 @@
     airships.forEach(a => drawAirship(a, T));
 
     // Buildings (back to front)
-    layer1.forEach(b => drawBuilding(b, T, 0.05));
-    layer2.forEach(b => drawBuilding(b, T, 0.1));
+    drawScrollingLayer(layer1, cityT, 0.035);
+    drawScrollingLayer(layer2, cityT, 0.06);
 
     // Train rides at mid-depth
     drawTrain(T);
 
-    layer3.forEach(b => drawBuilding(b, T, 0.2));
+    drawScrollingLayer(layer3, cityT, 0.1);
 
     // Flying vehicles (mid)
     vehicles.forEach(v => drawVehicle(v, T));
 
-    layer4.forEach(b => drawBuilding(b, T, 0.4));
+    drawScrollingLayer(layer4, cityT, 0.16);
 
     // Drones
     droids.forEach(d => drawDroid(d, T));
 
     // Street + people + cars
-    drawStreet(T);
+    drawStreet(cityT);
+    drawStreetProps(cityT);
+    buses.forEach(b => drawBus(b, T));
     groundCars.forEach(c => drawGroundCar(c, T));
     people.forEach(p => drawPerson(p, T));
 

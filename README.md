@@ -24,6 +24,10 @@ Then visit <http://localhost:8000>.
 - `assets/app.js` — view switching, typewriter prompt, uptime/clock, GitHub
   heatmap and Monkeytype chart, HIDE.UI / SHOW.UI minimize toggle (also `Esc` /
   `B`).
+- `assets/github-history.js` / `.json` — generated GitHub contribution calendar
+  data for the home page.
+- `scripts/fetch-github-history.py` — refreshes the generated GitHub history data
+  from github.com.
 - `assets/avatar.png` — portrait sprite.
 
 ## Controls
@@ -31,3 +35,9 @@ Then visit <http://localhost:8000>.
 - Click the left-side `[NN] LABEL` nav entries to switch terminal views.
 - Click `HIDE.UI` (top-right) — or press `Esc` / `B` — to fade the terminal and
   reveal the full city background.
+
+## Refresh GitHub history
+
+```bash
+python3 scripts/fetch-github-history.py
+```
