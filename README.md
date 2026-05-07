@@ -34,9 +34,10 @@ Then visit <http://localhost:8000>.
 - `scripts/fetch-monkeytype-history.py` — refreshes Monkeytype data from a public
   username or an authenticated ApeKey export.
 - `scripts/update-dashboard-data.py` — refreshes all generated dashboard files in
-  one command. GitHub and Monkeytype can update automatically; Cursor and Wispr
-  Flow are private-dashboard snapshots unless you provide updated `CURSOR_*` /
-  `WISPR_*` environment values.
+  one command, including `assets/dashboard-snapshots.json` / `.js`. GitHub and
+  Monkeytype can update automatically; Cursor and Wispr Flow are
+  private-dashboard snapshots unless you provide updated `CURSOR_*` / `WISPR_*`
+  environment values.
 - `.github/workflows/update-dashboard-data.yml` — scheduled refresh that runs every
   6 hours and commits generated dashboard data when it changes.
 - `assets/avatar.png` — portrait sprite.

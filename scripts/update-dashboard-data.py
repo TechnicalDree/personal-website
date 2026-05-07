@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOTS_JS = ROOT / "assets" / "dashboard-snapshots.js"
+SNAPSHOTS_JSON = ROOT / "assets" / "dashboard-snapshots.json"
 
 CURSOR_WEEKS = {
     20: [[6, 3]],
@@ -89,11 +90,16 @@ def write_snapshots():
             "weeks": WISPR_WEEKS,
         },
     }
+    SNAPSHOTS_JSON.write_text(
+        json.dumps(payload, indent=2)
+        + "\n"
+    )
     SNAPSHOTS_JS.write_text(
         "window.DASHBOARD_SNAPSHOTS = "
         + json.dumps(payload, separators=(",", ":"))
         + ";\n"
     )
+    print(f"Wrote {SNAPSHOTS_JSON.relative_to(ROOT)}")
     print(f"Wrote {SNAPSHOTS_JS.relative_to(ROOT)}")
 
 

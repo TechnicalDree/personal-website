@@ -378,7 +378,10 @@
     MONKEYTYPE_USER,
     ...(window.MONKEYTYPE_USER_CANDIDATES || []),
   ].filter(Boolean);
-  const SNAPSHOTS = window.DASHBOARD_SNAPSHOTS || {};
+  const DATA_CACHE_KEY = Date.now().toString(36);
+  let githubHistoryPromise;
+  let monkeytypeHistoryPromise;
+  let dashboardSnapshotsPromise;
   const MONKEYTYPE_FALLBACK_ACTIVITY = {
     total: 548,
     weeks: {
@@ -439,6 +442,29 @@
     return response.json();
   }
 
+  function fetchLocalJson(path) {
+    const separator = path.includes('?') ? '&' : '?';
+    return fetchJson(`${path}${separator}v=${DATA_CACHE_KEY}`);
+  }
+
+  function getGitHubHistory() {
+    githubHistoryPromise ||= fetchLocalJson('assets/github-history.json')
+      .catch(() => window.GITHUB_HISTORY);
+    return githubHistoryPromise;
+  }
+
+  function getMonkeytypeHistory() {
+    monkeytypeHistoryPromise ||= fetchLocalJson('assets/monkeytype-history.json')
+      .catch(() => window.MONKEYTYPE_HISTORY);
+    return monkeytypeHistoryPromise;
+  }
+
+  function getDashboardSnapshots() {
+    dashboardSnapshotsPromise ||= fetchLocalJson('assets/dashboard-snapshots.json')
+      .catch(() => window.DASHBOARD_SNAPSHOTS || {});
+    return dashboardSnapshotsPromise;
+  }
+
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
       '&': '&amp;',
@@ -458,7 +484,7 @@
     if (!grid || !list || !yearsEl || !monthsEl || grid.dataset.ready) return;
     grid.dataset.ready = '1';
 
-    const history = window.GITHUB_HISTORY;
+    const history = await getGitHubHistory();
     if (!history?.years?.length) {
       list.innerHTML = '<li><span class="cdate">ERR</span><span class="crepo">github</span> public activity could not be loaded</li>';
       if (meta) meta.textContent = 'history data missing';
@@ -543,12 +569,13 @@
     grid.dataset.ready = '1';
 
     try {
-      const data = window.MONKEYTYPE_HISTORY?.profile || await fetchMonkeytypeProfile();
+      const history = await getMonkeytypeHistory();
+      const data = history?.profile || await fetchMonkeytypeProfile();
       const activity = monkeytypeActivity(data);
       renderMonkeytypeCalendar(grid, activity);
       setText('#mk-user-title', `◆ MONKEYTYPE // @${escapeHtml(data.name || MONKEYTYPE_USER)}`);
       setText('#mk-total', `${activity.total.toLocaleString()} tests`);
-      if (meta) meta.textContent = `${data.name} · ${window.MONKEYTYPE_HISTORY ? 'cached export' : 'public profile'}`;
+      if (meta) meta.textContent = `${data.name} · ${history ? 'cached export' : 'public profile'}`;
     } catch (error) {
       renderMonkeytypeCalendar(grid, MONKEYTYPE_FALLBACK_ACTIVITY);
       setText('#mk-user-title', '◆ MONKEYTYPE // @a3rean');
@@ -640,12 +667,12 @@
     }
   }
 
-  function renderCursorHeatmap() {
+  async function renderCursorHeatmap() {
     const grid = $('#cursor-grid');
     if (!grid || grid.dataset.ready) return;
-    grid.dataset.ready = '1';
+    grid.dataset.ready = 'loading';
 
-    const cursor = SNAPSHOTS.cursor || {};
+    const cursor = (await getDashboardSnapshots()).cursor || {};
     const activeWeeks = cursor.weeks || {
       20: [[6, 3]],
       22: [[1, 1], [3, 1], [4, 1], [6, 1], [7, 2]],
@@ -692,14 +719,15 @@
         grid.appendChild(cell);
       }
     }
+    grid.dataset.ready = '1';
   }
 
-  function renderWisprHeatmap() {
+  async function renderWisprHeatmap() {
     const grid = $('#wispr-grid');
     if (!grid || grid.dataset.ready) return;
-    grid.dataset.ready = '1';
+    grid.dataset.ready = 'loading';
 
-    const wispr = SNAPSHOTS.wispr || {};
+    const wispr = (await getDashboardSnapshots()).wispr || {};
     const activeWeeks = wispr.weeks || {
       14: [[2, 3], [3, 4], [4, 4], [5, 4], [6, 4], [7, 3]],
       15: [[1, 1], [2, 1], [3, 'muted'], [4, 1], [5, 3], [6, 3], [7, 'muted']],
@@ -728,6 +756,7 @@
         grid.appendChild(cell);
       }
     }
+    grid.dataset.ready = '1';
   }
 
   const renderHomeExtras = () => {
