@@ -458,20 +458,22 @@ img, canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 
 .term-footer {
   padding: 8px 12px 4px;
-  display: flex; gap: 8px; align-items: center;
+  display: block;
   font-size: 17px;
+  line-height: 1.25;
   color: var(--term-green);
   text-shadow: 0 0 6px rgba(54,245,255,0.42);
   border-top: 1px dashed rgba(54,245,255,0.24);
   margin-top: 4px;
 }
-.term-footer .prompt { color: var(--cyan); }
+.term-footer .prompt { color: var(--cyan); margin-right: 8px; }
 .term-footer .cmdline {
+  display: inline;
   min-width: 1ch;
   outline: none;
   white-space: pre-wrap;
-  word-break: break-word;
-  caret-color: var(--yellow);
+  overflow-wrap: anywhere;
+  caret-color: transparent;
 }
 .term-footer .cmdline:empty::before {
   content: "type help";
@@ -480,7 +482,14 @@ img, canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 .term-footer:focus-within {
   border-top-color: rgba(246,255,122,0.55);
 }
-.term-footer .caret { color: var(--yellow); animation: blink 1s steps(2) infinite; }
+.term-footer .caret {
+  display: inline-block;
+  color: var(--yellow);
+  margin-left: 1px;
+  line-height: 1;
+  vertical-align: -0.08em;
+  animation: blink 1s steps(2) infinite;
+}
 
 /* ===== VIEW CONTENT ===== */
 .view { animation: view-in 0.45s cubic-bezier(.2,.7,.2,1) both; }
