@@ -39,29 +39,29 @@
     sky1: [2, 7, 18],
     sky2: [4, 18, 35],
     sky3: [7, 36, 62],
-    sky4: [13, 62, 93],
-    sky5: [22, 86, 118],
-    sky6: [35, 116, 145],
-    cyan: '#47d9ff',
-    cyanDk: '#166f96',
-    cyanDim: '#0d4c6c',
-    mag:  '#ff3fa6',
-    magDk:'#84205a',
-    pink: '#ff6bc2',
-    violet: '#6f8ec8',
-    blue: '#2b8bd3',
-    yel:  '#c8f4ff',
-    amber:'#70b7d6',
-    org:  '#2b78ad',
+    sky4: [14, 72, 112],
+    sky5: [30, 98, 142],
+    sky6: [52, 136, 174],
+    cyan: '#36f5ff',
+    cyanDk: '#178bb8',
+    cyanDim: '#0e5f87',
+    mag:  '#ff2fb3',
+    magDk:'#9b1d70',
+    pink: '#ff70dc',
+    violet: '#9b5cff',
+    blue: '#158dff',
+    yel:  '#f6ff7a',
+    amber:'#ffcc4d',
+    org:  '#ff8e3c',
     red:  '#ff2f65',
     wht:  '#e8fbff',
-    grnLed: '#72e6d6',
+    grnLed: '#62ff9b',
     bld1: '#04101f',  // far
     bld2: '#061a2e',
     bld3: '#082744',
     bld4: '#0b3656',  // near
     bld5: '#104a70',
-    glassBlue: '#12395a',
+    glassBlue: '#124b76',
     streetDark: '#020a13',
     streetMid:  '#061827',
   };
@@ -262,7 +262,7 @@
     gapMin: 2, gapRange: 4,
   });
   const layer4 = mkLayer({ // closest
-    wMin: 34, wMax: 76, hMin: 100, hMax: 218, baseY: 310,
+    wMin: 32, wMax: 72, hMin: 72, hMax: 168, baseY: 308,
     color: COL.bld4, winDensity: 0.2,
     winW: 3, winH: 4, gapX: 3, gapY: 3,
     gapMin: 2, gapRange: 6,
@@ -346,6 +346,22 @@
       color: pickPersonColor(),
       headlight: Math.random() < 0.5 ? COL.yel : COL.cyan,
       taillight: COL.red,
+    });
+  }
+
+  const robots = [];
+  for (let i = 0; i < 8; i++) {
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    robots.push({
+      x: Math.random() * W,
+      y: SIDEWALK_Y + (Math.random() < 0.58 ? -8 : 5),
+      sp: dir * (0.045 + Math.random() * 0.08),
+      body: pick([COL.cyanDk, COL.blue, COL.violet, COL.bld5, COL.magDk]),
+      glow: pick([COL.cyan, COL.mag, COL.yel, COL.grnLed, COL.violet]),
+      eye: pick([COL.mag, COL.cyan, COL.yel]),
+      kind: pick(['tread', 'walker', 'antenna', 'delivery']),
+      bob: Math.random() * Math.PI * 2,
+      phase: Math.random() * 80,
     });
   }
 
@@ -1114,6 +1130,59 @@
     }
   }
 
+  function drawRobot(r, t) {
+    r.x += r.sp * citySpeed;
+    if (r.x < -18) r.x = W + 18;
+    if (r.x > W + 18) r.x = -18;
+    r.bob += 0.08;
+    const rx = r.x | 0;
+    const ry = (r.y + Math.sin(r.bob) * (r.kind === 'walker' ? 1 : 0.35)) | 0;
+    const blink = ((t + r.phase) | 0) % 70 < 44;
+
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = r.glow;
+    ctx.fillRect(rx - 2, ry + 9, 13, 3);
+    ctx.globalAlpha = 1;
+
+    if (r.kind === 'delivery') {
+      ctx.fillStyle = r.body;
+      ctx.fillRect(rx, ry + 1, 11, 9);
+      ctx.fillStyle = r.glow;
+      ctx.fillRect(rx + 2, ry + 3, 7, 3);
+      ctx.fillStyle = '#03111f';
+      ctx.fillRect(rx + 3, ry + 4, 5, 1);
+      ctx.fillStyle = COL.cyanDk;
+      ctx.fillRect(rx + 1, ry + 10, 3, 2);
+      ctx.fillRect(rx + 7, ry + 10, 3, 2);
+    } else {
+      ctx.fillStyle = r.body;
+      ctx.fillRect(rx + 2, ry + 3, 7, 7);
+      ctx.fillRect(rx + 3, ry, 5, 4);
+      ctx.fillStyle = r.eye;
+      if (blink) {
+        ctx.fillRect(rx + 4, ry + 1, 1, 1);
+        ctx.fillRect(rx + 7, ry + 1, 1, 1);
+      }
+      ctx.fillStyle = r.glow;
+      ctx.fillRect(rx + 3, ry + 5, 5, 1);
+      if (r.kind === 'antenna') {
+        ctx.fillRect(rx + 5, ry - 5, 1, 5);
+        ctx.fillRect(rx + 4, ry - 6, 3, 1);
+      }
+      ctx.fillStyle = COL.cyanDk;
+      if (r.kind === 'walker') {
+        const step = ((t / 12) | 0) % 2;
+        ctx.fillRect(rx + 2 + step, ry + 10, 2, 3);
+        ctx.fillRect(rx + 7 - step, ry + 10, 2, 3);
+      } else {
+        ctx.fillRect(rx, ry + 10, 11, 2);
+        ctx.fillStyle = '#020914';
+        ctx.fillRect(rx + 1, ry + 11, 2, 1);
+        ctx.fillRect(rx + 8, ry + 11, 2, 1);
+      }
+    }
+  }
+
   // ---------- GROUND CARS ----------
   function drawGroundCar(c, t) {
     c.x += c.sp;
@@ -1289,6 +1358,7 @@
     buses.forEach(b => drawBus(b, T));
     groundCars.forEach(c => drawGroundCar(c, T));
     people.forEach(p => drawPerson(p, T));
+    robots.forEach(r => drawRobot(r, T));
 
     // CRT flicker
     drawCRTFlicker(T);

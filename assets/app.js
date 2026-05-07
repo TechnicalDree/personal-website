@@ -82,6 +82,7 @@
   const screen = document.getElementById('screen');
   const cmd = document.getElementById('cmd');
   const crumb = document.getElementById('crumb');
+  const termFooter = document.querySelector('.term-footer');
   const navBtns = document.querySelectorAll('.nav-item');
 
   const VIEW_META = {
@@ -93,15 +94,58 @@
     contact:  { tpl: 'tpl-contact',  cmd: 'open_comms --secure',  crumb: '~/contact' },
   };
 
-  function renderView(name) {
-    const meta = VIEW_META[name] || VIEW_META.home;
+  const VIEW_COMMANDS = {
+    home: ['home', '0', '00', 'whoami', 'cat home.txt', 'cat ./home.txt', 'cd ~', 'cd home'],
+    projects: ['projects', 'project', '1', '01', 'ls projects', 'ls ./projects', 'cd projects'],
+    about: ['about', '2', '02', 'cat about.log', 'cat ./about.log'],
+    log: ['experience', 'exp', 'log', '3', '03', 'tail -f changelog', 'tail -f ./changelog', 'tail -f ./log', 'cat ./changelog'],
+    gallery: ['skills', 'skill', 'gallery', '4', '04', 'cat skills.json', 'cat ./skills.json'],
+    contact: ['contact', '5', '05', 'open_comms', 'open_comms --secure', 'mail', 'email'],
+  };
+  const COMMAND_TO_VIEW = new Map(
+    Object.entries(VIEW_COMMANDS).flatMap(([view, commands]) => (
+      commands.map((command) => [command, view])
+    )),
+  );
+  const ROOT_COMMANDS = [
+    'home.txt',
+    'projects/',
+    'about.log',
+    'changelog',
+    'skills.json',
+    'contact',
+  ];
+  const COMMAND_HELP = [
+    'home | cat ./home.txt          open the intro',
+    'projects | ls ./projects       browse selected work',
+    'about | cat ./about.log        read operator file',
+    'experience | tail -f ./log     show work history',
+    'skills | cat ./skills.json     show toolchain',
+    'contact | open_comms --secure  open uplink',
+    'ls | pwd | clear | help        terminal utilities',
+    'Up/Down                        command history',
+  ];
+  const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable="true"]';
+  let activeView = 'home';
+
+  function normalizeCommand(value) {
+    return value.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function renderView(name, options = {}) {
+    const viewName = VIEW_META[name] ? name : 'home';
+    const meta = VIEW_META[viewName];
     const tpl = document.getElementById(meta.tpl);
     if (!tpl) return;
+    activeView = viewName;
     screen.innerHTML = '';
     screen.appendChild(tpl.content.cloneNode(true));
     crumb.textContent = meta.crumb;
-    // Typewriter effect on command line
-    typeCmd(meta.cmd);
+    if (options.commandText !== undefined) {
+      setCommandLine(options.commandText);
+    } else {
+      typeCmd(meta.cmd);
+    }
     // Wire quick-action buttons inside the view
     screen.querySelectorAll('[data-nav]').forEach(b => {
       b.addEventListener('click', () => setView(b.getAttribute('data-nav')));
@@ -114,23 +158,182 @@
   }
 
   let typing = null;
+  const commandHistory = [];
+  let historyIndex = 0;
+
+  function stopTyping() {
+    if (!typing) return;
+    clearInterval(typing);
+    typing = null;
+  }
+
+  function placeCaretAtEnd(el) {
+    el.focus();
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  function setCommandLine(text = '', focus = false) {
+    stopTyping();
+    cmd.textContent = text;
+    cmd.dataset.prefill = '';
+    if (focus) placeCaretAtEnd(cmd);
+  }
+
   function typeCmd(text) {
-    if (typing) clearInterval(typing);
+    stopTyping();
     cmd.textContent = '';
+    cmd.dataset.prefill = text;
     let i = 0;
     typing = setInterval(() => {
       cmd.textContent += text[i++];
-      if (i >= text.length) { clearInterval(typing); typing = null; }
+      if (i >= text.length) {
+        stopTyping();
+        if (document.activeElement === cmd) placeCaretAtEnd(cmd);
+      }
     }, 28);
   }
 
-  function setView(name) {
-    navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === name));
-    renderView(name);
+  function setView(name, options = {}) {
+    const viewName = VIEW_META[name] ? name : 'home';
+    navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === viewName));
+    renderView(viewName, options);
+  }
+
+  function renderTerminalOutput(command, lines) {
+    navBtns.forEach(b => b.classList.remove('active'));
+    crumb.textContent = '~/terminal';
+    screen.innerHTML = `
+      <div class="view terminal-output">
+        <div class="row-head">
+          <span class="tag tag-cyan">&gt;_ ${escapeHtml(command)}</span>
+          <span class="tag tag-mag">TERMINAL</span>
+        </div>
+        <h2 class="h2">COMMAND OUTPUT</h2>
+        <ul class="terminal-lines">
+          ${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+    screen.scrollTop = 0;
+  }
+
+  function executeCommand(rawCommand) {
+    const input = rawCommand.trim();
+    const normalized = normalizeCommand(input);
+    if (!normalized) {
+      setCommandLine('', true);
+      return;
+    }
+
+    commandHistory.push(input);
+    historyIndex = commandHistory.length;
+
+    const targetView = COMMAND_TO_VIEW.get(normalized);
+    if (targetView) {
+      setView(targetView, { commandText: '' });
+      placeCaretAtEnd(cmd);
+      return;
+    }
+
+    if (normalized === 'help' || normalized === '?' || normalized === 'man') {
+      renderTerminalOutput(input, COMMAND_HELP);
+    } else if (normalized === 'ls' || normalized === 'ls .' || normalized === 'ls ./') {
+      renderTerminalOutput(input, ROOT_COMMANDS);
+    } else if (normalized === 'pwd') {
+      renderTerminalOutput(input, ['/home/adrian']);
+    } else if (normalized === 'clear' || normalized === 'cls' || normalized === 'reset') {
+      navBtns.forEach(b => b.classList.remove('active'));
+      crumb.textContent = '~/terminal';
+      screen.innerHTML = '';
+    } else {
+      renderTerminalOutput(input, [
+        `command not found: ${input}`,
+        'type "help" for available commands',
+      ]);
+    }
+
+    setCommandLine('', true);
+  }
+
+  function clearPrefillForEdit() {
+    if (typing || (cmd.dataset.prefill && cmd.textContent === cmd.dataset.prefill)) {
+      setCommandLine('');
+    }
+  }
+
+  function showHistory(delta) {
+    if (!commandHistory.length) return;
+    historyIndex = Math.min(commandHistory.length, Math.max(0, historyIndex + delta));
+    setCommandLine(commandHistory[historyIndex] || '', true);
+  }
+
+  function autocompleteCommand() {
+    const current = normalizeCommand(cmd.textContent);
+    if (!current) {
+      renderTerminalOutput('help', COMMAND_HELP);
+      setCommandLine('', true);
+      return;
+    }
+
+    const commands = [
+      ...COMMAND_TO_VIEW.keys(),
+      'help',
+      'ls',
+      'pwd',
+      'clear',
+    ];
+    const matches = [...new Set(commands.filter((command) => command.startsWith(current)))];
+    if (matches.length === 1) {
+      setCommandLine(matches[0], true);
+    } else if (matches.length > 1) {
+      renderTerminalOutput('complete', [`matches: ${matches.slice(0, 12).join('  ')}`]);
+      setCommandLine(current, true);
+    }
+  }
+
+  function isEditableTarget(target) {
+    return target instanceof Element && target.closest(EDITABLE_SELECTOR);
   }
 
   navBtns.forEach(b => {
     b.addEventListener('click', () => setView(b.dataset.view));
+  });
+
+  cmd.setAttribute('contenteditable', 'true');
+  cmd.setAttribute('role', 'textbox');
+  cmd.setAttribute('aria-label', 'Terminal command input');
+  cmd.setAttribute('spellcheck', 'false');
+
+  termFooter.addEventListener('click', () => placeCaretAtEnd(cmd));
+  cmd.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeCommand(cmd.textContent);
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      showHistory(-1);
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      showHistory(1);
+      return;
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      autocompleteCommand();
+      return;
+    }
+    if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') {
+      clearPrefillForEdit();
+    }
   });
 
   // --- Uptime + clock ---
@@ -164,6 +367,7 @@
   minBtn.addEventListener('click', () => setMin(!minimized));
   // Esc to toggle, also `b` for "background"
   window.addEventListener('keydown', (e) => {
+    if (isEditableTarget(e.target)) return;
     if (e.key === 'Escape' || e.key === 'b' || e.key === 'B') setMin(!minimized);
   });
 
