@@ -439,30 +439,7 @@
     sctx.fillRect(x, y, 1 + ((Math.random() * 2) | 0), h);
   }
 
-  // ----- Moon (small, upper-left, behind clouds) -----
-  const moon = { x: 110, y: 60, r: 18 };
-  for (let dy = -moon.r; dy <= moon.r; dy++) {
-    for (let dx = -moon.r; dx <= moon.r; dx++) {
-      const d2 = dx*dx + dy*dy;
-      if (d2 > moon.r * moon.r) continue;
-      const bd = BAYER[(moon.y + dy) & 7][(moon.x + dx) & 7];
-      let c;
-      if (d2 > (moon.r-2)*(moon.r-2)) c = '#7fc0de';
-      else if (bd > 31) c = '#d9f8ff';
-      else c = '#a8d9ef';
-      sctx.fillStyle = c;
-      sctx.fillRect(moon.x + dx, moon.y + dy, 1, 1);
-    }
-  }
-  // craters
-  [[-6,-3,2],[4,4,2],[-3,7,2],[6,-5,1],[1,-1,1]].forEach(([cx,cy,cr]) => {
-    for (let dy=-cr;dy<=cr;dy++) for (let dx=-cr;dx<=cr;dx++) {
-      if (dx*dx+dy*dy<=cr*cr) {
-        sctx.fillStyle = '#4f87a2';
-        sctx.fillRect(moon.x+cx+dx, moon.y+cy+dy, 1, 1);
-      }
-    }
-  });
+  // Moon is drawn each frame from visitor-local solar data (city-environment.js).
 
   // ----- Clouds (long horizontal pixel strips) -----
   function drawCloud(x, y, w, c, alpha=0.5) {
@@ -900,7 +877,7 @@
       s.x += s.dx; s.y += s.dy;
       for (let k = 0; k < 12; k++) {
         ctx.fillStyle = k < 2 ? COL.wht : (k < 5 ? COL.cyan : COL.pink);
-        ctx.globalAlpha = (1 - k / 12) * 0.95;
+        ctx.globalAlpha = (1 - k / 12) * 0.95 * starVisForShoots;
         ctx.fillRect((s.x - k * s.dx * 0.5) | 0, (s.y - k * s.dy * 0.5) | 0, 1, 1);
       }
       ctx.globalAlpha = 1;
@@ -1298,6 +1275,57 @@
     ctx.globalAlpha = 1;
   }
 
+  // ---------- Visitor-local sky (sun / moon / star dim) ----------
+  function getSolarState() {
+    const env = window.CityEnvironment;
+    if (env && typeof env.getLocalSolar === 'function') return env.getLocalSolar();
+    const d = new Date();
+    const hour = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+    let dayT = 0;
+    if (hour >= 4 && hour <= 20) dayT = (hour - 4) / 16;
+    const sunAlt = Math.sin(dayT * Math.PI);
+    const sunAngle = dayT * Math.PI;
+    const sunX = 70 + Math.sin(sunAngle) * (W - 140);
+    const sunY = 125 - Math.sin(sunAngle) * 88;
+    const starVisibility = Math.max(0, Math.min(1, 1 - Math.max(0, Math.min(1, (sunAlt - 0.08) / 0.37))));
+    const showSun = hour >= 5.2 && hour <= 19.8 && sunAlt > 0.04;
+    const moonAngle = sunAngle + Math.PI;
+    return {
+      starVisibility,
+      sun: { x: sunX, y: sunY, r: 15, show: showSun },
+      moon: { x: 70 + Math.sin(moonAngle) * (W - 140), y: 125 - Math.sin(moonAngle) * 88, r: 16, show: starVisibility > 0.28 && !showSun },
+    };
+  }
+
+  function drawSolarBodies(ctx2, solar) {
+    const env = window.CityEnvironment;
+    if (env && env.drawSun && env.drawMoon) {
+      env.drawSun(ctx2, solar.sun);
+      env.drawMoon(ctx2, solar.moon);
+      return;
+    }
+    if (solar.sun && solar.sun.show) {
+      ctx2.fillStyle = 'rgba(255,252,220,0.9)';
+      ctx2.beginPath();
+      ctx2.arc(solar.sun.x, solar.sun.y, solar.sun.r * 0.55, 0, Math.PI * 2);
+      ctx2.fill();
+    }
+    if (solar.moon && solar.moon.show) {
+      const m = solar.moon;
+      for (let dy = -m.r; dy <= m.r; dy++) {
+        for (let dx = -m.r; dx <= m.r; dx++) {
+          if (dx * dx + dy * dy <= m.r * m.r) {
+            ctx2.fillStyle = (dx * dx + dy * dy > (m.r - 2) * (m.r - 2)) ? '#7fc0de' : '#d9f8ff';
+            ctx2.fillRect((m.x + dx) | 0, (m.y + dy) | 0, 1, 1);
+          }
+        }
+      }
+    }
+  }
+
+  // Shooting stars fade with daylight (updated each frame).
+  let starVisForShoots = 1;
+
   // ---------- MAIN LOOP ----------
   let T = 0;
   function frame() {
@@ -1305,18 +1333,26 @@
     cityT += citySpeed;
     ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
     ctx.imageSmoothingEnabled = false;
+    const solar = getSolarState();
+    starVisForShoots = solar.starVisibility;
     // sky baseline
     ctx.drawImage(sky, 0, 0);
 
-    // Twinkle stars
+    const env = window.CityEnvironment;
+    if (env && typeof env.applyDynamicSkyBeforeStars === 'function') {
+      env.applyDynamicSkyBeforeStars(ctx, solar);
+    }
+
+    // Twinkle stars (dimmed by local daylight)
     for (let i = 0; i < stars.length; i++) {
       const s = stars[i];
       const f = 0.5 + 0.5 * Math.sin(T * s.speed + s.phase);
       if (f > 0.32) {
         ctx.fillStyle = s.color;
-        ctx.globalAlpha = f;
+        ctx.globalAlpha = f * solar.starVisibility;
         ctx.fillRect(s.x, s.y, 1, 1);
         if (s.big && f > 0.7) {
+          ctx.globalAlpha *= 0.85;
           ctx.fillRect(s.x - 1, s.y, 1, 1);
           ctx.fillRect(s.x + 1, s.y, 1, 1);
           ctx.fillRect(s.x, s.y - 1, 1, 1);
@@ -1325,6 +1361,8 @@
       }
     }
     ctx.globalAlpha = 1;
+
+    drawSolarBodies(ctx, solar);
 
     maybeShoot();
     drawShoots();

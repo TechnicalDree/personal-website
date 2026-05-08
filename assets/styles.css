@@ -30,7 +30,31 @@ html, body {
 img, canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 
 /* ===== BACKGROUND + CRT ===== */
-#bg { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display: block; }
+.bg-parallax {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  will-change: transform;
+  transform-origin: center center;
+}
+.bg-parallax #bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+}
+#bg-fx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+  pointer-events: none;
+}
 
 .scanlines {
   position: fixed; inset: 0; z-index: 50; pointer-events: none;
@@ -123,7 +147,9 @@ img, canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 16px;
-  transform: perspective(1800px) rotateX(5deg) rotateY(-7deg);
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  transform: perspective(1800px) rotateX(calc(5deg + var(--tilt-x))) rotateY(calc(-7deg + var(--tilt-y)));
   transform-style: preserve-3d;
   filter:
     drop-shadow(0 30px 40px rgba(255, 63, 166, 0.18))

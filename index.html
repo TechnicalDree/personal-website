@@ -9,7 +9,10 @@
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
-  <canvas id="bg"></canvas>
+  <div id="bg-parallax" class="bg-parallax" aria-hidden="true">
+    <canvas id="bg"></canvas>
+    <canvas id="bg-fx"></canvas>
+  </div>
   <div class="vignette"></div>
   <div class="scanlines"></div>
 
@@ -482,6 +485,7 @@
 <script src="assets/github-history.js"></script>
 <script src="assets/monkeytype-history.js"></script>
 <script src="assets/dashboard-snapshots.js"></script>
+<script src="assets/city-environment.js"></script>
 <script src="assets/bg.js"></script>
 <script src="assets/app.js"></script>
 </body>
