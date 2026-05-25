@@ -1,0 +1,130 @@
+{
+  "profile": {
+    "name": "Adrian Muñoz",
+    "handle": "@a3rean",
+    "bio": "// software engineer",
+    "statCmu": "ECE",
+    "statGrad": "MAY 2026",
+    "statGithub": "@TechnicalDree"
+  },
+  "home": {
+    "headlineHtml": "I build systems<br>from <span class=\"hl\">silicon</span> to full-stack.",
+    "headlineGlitch": "I build systems from silicon to full-stack.",
+    "ledeHtml": "Carnegie Mellon <span class=\"u-cy\">BS+MS Electrical &amp; Computer Engineering</span> student with a <span class=\"u-mg\">Robotics minor</span>, building production software across React, Spring Boot, AWS, systems programming, networking, AI tooling, and security.",
+    "status": "● GRADUATING MAY 2026",
+    "stack": "Python · C++ · Java · TS · React · AWS",
+    "focus": "Full-stack · Systems · Robotics · Security",
+    "gpa": "3.40 / 4.00",
+    "ticker": [
+      "// internship: <b>Atlassian Software Engineer Intern</b>",
+      "// prior: <b>Amazon SDE Intern</b>",
+      "// build: <b>HTTP server · AI authentication · Chrome extension</b>",
+      "// contact: <b>adrianm2003az@gmail.com</b>"
+    ]
+  },
+  "projects": {
+    "countLabel": "05 ENTRIES",
+    "items": [
+      {
+        "status": "SHIPPED",
+        "title": "HTTP PSEUDO-STREAMING SERVER",
+        "description": "HTTP/1.1 server built from scratch with low-level Python sockets, full method/status support, byte-range video streaming, and 200+ concurrent clients.",
+        "chips": ["Python", "Sockets", "HTTP/1.1"]
+      },
+      {
+        "status": "LIVE",
+        "title": "DEEP-LIVE-CAM AUTH SYSTEM",
+        "description": "AI content authentication system with LSB watermarking, RSA-2048/4096 signatures, PKI automation, and Dockerized deployment across a 5-framework ML stack.",
+        "chips": ["Python", "Docker", "Crypto"]
+      },
+      {
+        "status": "BETA",
+        "title": "monoPix-scout",
+        "description": "Chrome Manifest V3 extension that detects, classifies, and optionally blocks covert tracking pixels, beacon calls, and scripted network requests in real time.",
+        "chips": ["React", "JavaScript", "MV3"]
+      },
+      {
+        "status": "ARCHIVED",
+        "title": "YACA CHAT APP",
+        "description": "Full-stack chat app with authentication, friend lists, REST APIs, responsive UI, websockets, and real-time group chat for 20+ users.",
+        "chips": ["TypeScript", "Node.js", "MongoDB"]
+      },
+      {
+        "status": "SYSTEMS",
+        "title": "BUFFER POOL MANAGER",
+        "description": "Thread-safe C++ buffer pool manager with LRU-K page replacement, background disk scheduling, promise I/O callbacks, and RAII page guards.",
+        "chips": ["C++", "Concurrency", "DB Systems"]
+      }
+    ]
+  },
+  "about": {
+    "ledeHtml": "I'm Adrian Muñoz, a Carnegie Mellon electrical and computer engineer who likes building across the stack: <span class=\"u-cy\">backend services</span>, <span class=\"u-mg\">interfaces</span>, infrastructure, embedded/systems code, and robotics-adjacent software.",
+    "bodyHtml": "My recent work includes shipping a production admin UI at <b>Atlassian</b>, building AWS data-processing infrastructure at <b>Amazon</b>, evaluating AI coding models at Outlier, and building projects that span networking, cryptography, browser privacy, chat systems, and database internals.",
+    "quote": "I like software that turns messy operational work into reliable systems people can actually use.",
+    "signals": [
+      "BS+MS in Electrical & Computer Engineering, Robotics minor.",
+      "Production experience with React, Spring Boot, PostgreSQL, AWS, and Java services.",
+      "Comfortable moving from low-level systems to polished product UI.",
+      "Interested in full-stack systems, robotics, infrastructure, ML tooling, and security."
+    ],
+    "specClass": "SOFTWARE ENG",
+    "specSchool": "CMU",
+    "specDegree": "BS+MS ECE",
+    "specMinor": "ROBOTICS",
+    "specGrad": "MAY 2026",
+    "skills": [
+      { "name": "PYTHON", "width": "92%" },
+      { "name": "REACT", "width": "86%" },
+      { "name": "JAVA", "width": "82%" },
+      { "name": "C++", "width": "80%" },
+      { "name": "AWS", "width": "78%" }
+    ]
+  },
+  "experience": {
+    "items": [
+      {
+        "dates": "2025.05 - 2025.08",
+        "tag": "SWE",
+        "bodyHtml": "<b>Atlassian</b> — developed a full-stack admin UI for release-track operations using React, Spring Boot REST APIs, and PostgreSQL; reduced admin workload by ~34 hours/week."
+      },
+      {
+        "dates": "2024.05 - 2024.07",
+        "tag": "AI",
+        "bodyHtml": "<b>Outlier</b> — created weekly coding prompts and validation checks, increasing model evaluation coverage by 17% using pandas/NumPy pass-rate measurements."
+      },
+      {
+        "dates": "2023.05 - 2023.08",
+        "tag": "SDE",
+        "bodyHtml": "<b>Amazon</b> — designed a Java service for S3 file metrics and Lambda handlers linking DynamoDB data to QuickSight dashboards for ~11,000 ASIN records."
+      },
+      {
+        "dates": "2026.05",
+        "tag": "CMU",
+        "bodyHtml": "<b>Carnegie Mellon University</b> — BS+MS in Electrical & Computer Engineering, Minor in Robotics, GPA 3.40/4.00."
+      },
+      {
+        "dates": "2025 - 2026",
+        "tag": "BUILD",
+        "bodyHtml": "Built projects across HTTP networking, content authentication, browser privacy, real-time chat, and database buffer management."
+      },
+      {
+        "dates": "TOOLCHAIN",
+        "tag": "STACK",
+        "bodyHtml": "<b>Languages</b>: Python, C, C++, Java, JavaScript, TypeScript, PostgreSQL, R, HTML, CSS, MATLAB."
+      }
+    ]
+  },
+  "skills": {
+    "caption": "// frameworks: React, Spring, REST APIs, NumPy, PyTorch, ROS2, Node.js, Express, AWS, Django, TensorFlow, Flask."
+  },
+  "contact": {
+    "disclaimer": "// open to software engineering roles spanning full-stack, systems, infrastructure, robotics, and applied AI tooling.",
+    "channels": [
+      { "icon": "@", "label": "mail", "value": "adrianm2003az@gmail.com", "href": "mailto:adrianm2003az@gmail.com" },
+      { "icon": "GH", "label": "github", "value": "/TechnicalDree", "href": "https://github.com/TechnicalDree" },
+      { "icon": "in", "label": "linkedin", "value": "/in/adrian---munoz", "href": "https://www.linkedin.com/in/adrian---munoz" },
+      { "icon": "CMU", "label": "school", "value": "Carnegie Mellon ECE", "disabled": true },
+      { "icon": "☎", "label": "phone", "value": "480-682-7481", "disabled": true }
+    ]
+  }
+}

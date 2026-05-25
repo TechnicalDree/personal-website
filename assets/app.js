@@ -115,6 +115,7 @@
     'skills.json',
     'contact',
   ];
+  const VIEW_ORDER = ['home', 'projects', 'about', 'log', 'gallery', 'contact'];
   const COMMAND_HELP = [
     'home | cat ./home.txt          open the intro',
     'projects | ls ./projects       browse selected work',
@@ -123,8 +124,26 @@
     'skills | cat ./skills.json     show toolchain',
     'contact | open_comms --secure  open uplink',
     'ls | pwd | clear | help        terminal utilities',
+    'whoami | neofetch | weather     system introspection',
+    'fortune | uptime | ping | stats  misc telemetry',
+    'cowsay <msg> | theme | email    easter eggs',
+    'matrix                          overdrive mode',
     'Up/Down                        command history',
+    '0-5 / ← →                        jump views',
+    '/ | T                          focus cmd / theme',
   ];
+  const FORTUNES = [
+    'the best code is the code you can delete.',
+    'ship the panel, then polish the neon.',
+    'latency is a feature until it is not.',
+    'robots do not care about your sprint velocity.',
+    'every buffer pool teaches you about life.',
+    'if it compiles on the first try, be suspicious.',
+    'systems thinking beats framework chasing.',
+    'the city never sleeps; neither does the CI.',
+  ];
+  const THEME_CYCLE = ['default', 'amber', 'green', 'mono'];
+  const THEME_LABELS = window.PhosphorTheme ? PhosphorTheme.LABELS : { default: 'CYAN', amber: 'AMBER', green: 'MATRIX', mono: 'MONO' };
   const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable="true"]';
   let activeView = 'home';
 
@@ -140,6 +159,9 @@
     activeView = viewName;
     screen.innerHTML = '';
     screen.appendChild(tpl.content.cloneNode(true));
+    screen.classList.remove('view-glitch');
+    void screen.offsetWidth;
+    screen.classList.add('view-glitch');
     crumb.textContent = meta.crumb;
     if (options.commandText !== undefined) {
       setCommandLine(options.commandText);
@@ -150,11 +172,13 @@
     screen.querySelectorAll('[data-nav]').forEach(b => {
       b.addEventListener('click', () => setView(b.getAttribute('data-nav')));
     });
+    wireProjectCards();
     // serial numbers on project cards
     screen.querySelectorAll('.prj').forEach((el, i) => {
       el.setAttribute('data-sn', (0xA000 + i * 37).toString(16).toUpperCase());
     });
     screen.scrollTop = 0;
+    document.dispatchEvent(new CustomEvent('adrian:view-rendered', { detail: { view: viewName } }));
   }
 
   let typing = null;
@@ -204,9 +228,12 @@
     renderView(viewName, options);
   }
 
-  function renderTerminalOutput(command, lines) {
+  function renderTerminalOutput(command, lines, options = {}) {
     navBtns.forEach(b => b.classList.remove('active'));
     crumb.textContent = '~/terminal';
+    const body = options.pre
+      ? `<pre class="terminal-pre">${escapeHtml(options.pre)}</pre>`
+      : `<ul class="terminal-lines">${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`;
     screen.innerHTML = `
       <div class="view terminal-output">
         <div class="row-head">
@@ -214,12 +241,109 @@
           <span class="tag tag-mag">TERMINAL</span>
         </div>
         <h2 class="h2">COMMAND OUTPUT</h2>
-        <ul class="terminal-lines">
-          ${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}
-        </ul>
+        ${body}
       </div>
     `;
     screen.scrollTop = 0;
+  }
+
+  function formatUptime(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+
+  function bumpVisitCount() {
+    let visits = 1;
+    try {
+      visits = Number(localStorage.getItem('adrianVisits') || 0) + 1;
+      localStorage.setItem('adrianVisits', String(visits));
+    } catch (_) {}
+    return visits;
+  }
+
+  function readVisitCount() {
+    try {
+      return Number(localStorage.getItem('adrianVisits') || 1);
+    } catch (_) {
+      return 1;
+    }
+  }
+
+  function cowsay(text) {
+    const msg = (text || 'i build systems').slice(0, 48);
+    const top = ` ${'_'.repeat(msg.length + 2)} `;
+    const mid = `< ${msg} >`;
+    const bot = ` ${'-'.repeat(msg.length + 2)} `;
+    return [
+      top,
+      mid,
+      bot,
+      '        \\   ^__^',
+      '         \\  (oo)\\_______',
+      '            (__)\\       )\\/\\',
+      '                ||----w |',
+      '                ||     ||',
+    ].join('\n');
+  }
+
+  function applyTheme(name) {
+    const next = THEME_CYCLE.includes(name) ? name : 'default';
+    document.body.dataset.theme = next;
+    THEME_CYCLE.forEach((themeName) => {
+      if (themeName !== 'default') document.body.classList.remove(`theme-${themeName}`);
+    });
+    if (next !== 'default') document.body.classList.add(`theme-${next}`);
+    try { localStorage.setItem('crtTheme', next); } catch (_) {}
+    const label = document.querySelector('.theme-label');
+    if (label) label.textContent = THEME_LABELS[next] || 'CYAN';
+    if (envPhosphor) envPhosphor.textContent = THEME_LABELS[next] || 'CYAN';
+    if (window.PhosphorTheme) PhosphorTheme.apply(next);
+    return next;
+  }
+
+  function cycleTheme(direction = 1) {
+    const current = document.body.dataset.theme || 'default';
+    const idx = THEME_CYCLE.indexOf(current);
+    const next = THEME_CYCLE[(idx + direction + THEME_CYCLE.length) % THEME_CYCLE.length];
+    return applyTheme(next);
+  }
+
+  function loadSavedTheme() {
+    try {
+      const saved = localStorage.getItem('crtTheme');
+      if (saved && saved !== 'default') applyTheme(saved);
+    } catch (_) {}
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function runPingOutput(input) {
+    renderTerminalOutput(input, ['PING github.com (TechnicalDree)...']);
+    const lines = ['PING github.com (TechnicalDree)...'];
+    let i = 0;
+    const host = 'github.com';
+    const id = setInterval(() => {
+      if (i >= 4) {
+        clearInterval(id);
+        lines.push(`--- ${host} ping statistics ---`);
+        lines.push('4 packets transmitted, 4 received, 0% packet loss');
+        renderTerminalOutput(input, lines);
+        return;
+      }
+      const ms = 18 + Math.floor(Math.random() * 24);
+      lines.push(`64 bytes from ${host}: icmp_seq=${i + 1} ttl=52 time=${ms}ms`);
+      renderTerminalOutput(input, lines);
+      i += 1;
+    }, 380);
   }
 
   function executeCommand(rawCommand) {
@@ -242,6 +366,69 @@
 
     if (normalized === 'help' || normalized === '?' || normalized === 'man') {
       renderTerminalOutput(input, COMMAND_HELP);
+    } else if (normalized === 'whoami') {
+      renderTerminalOutput(input, [
+        'adrian munoz (@a3rean)',
+        'bs+ms electrical & computer engineering @ cmu',
+        'software engineer · full-stack · systems · robotics',
+        'graduated may 2026 · gpa 3.87',
+      ]);
+    } else if (normalized === 'neofetch') {
+      renderTerminalOutput(input, [
+        '       adrian@cmu-ece',
+        '       os: adrian-OS 4.2.1',
+        '       host: personal-website',
+        '       kernel: vanilla-js',
+        '       uptime: session active',
+        '       shell: terminal-ui',
+        '       stack: python · c++ · java · ts · react · aws',
+      ]);
+    } else if (normalized === 'weather') {
+      renderTerminalOutput(input, getWeatherLines());
+    } else if (normalized === 'fortune' || normalized === 'motd') {
+      const quote = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
+      renderTerminalOutput(input, [`"${quote}"`, '// adrian-os fortune daemon']);
+    } else if (normalized === 'uptime') {
+      const s = ((Date.now() - startT) / 1000) | 0;
+      renderTerminalOutput(input, [
+        `session uptime: ${formatUptime(s)}`,
+        `view: ${activeView}`,
+        `theme: ${document.body.dataset.theme || 'default'}`,
+        `operator: adrian@cmu-ece`,
+      ]);
+    } else if (normalized === 'stats' || normalized === 'visits') {
+      renderTerminalOutput(input, [
+        `site visits (local): ${readVisitCount()}`,
+        `boot skipped: ${sessionStorage.getItem('bootDone') === '1' ? 'yes' : 'no'}`,
+        `commands run: ${commandHistory.length}`,
+      ]);
+    } else if (normalized === 'ping' || normalized.startsWith('ping ')) {
+      runPingOutput(input);
+      setCommandLine('', true);
+      return;
+    } else if (normalized.startsWith('cowsay ')) {
+      const msg = input.replace(/^cowsay\s+/i, '').trim() || 'hello world';
+      renderTerminalOutput(input, [], { pre: cowsay(msg) });
+    } else if (normalized === 'cowsay') {
+      renderTerminalOutput(input, [], { pre: cowsay('i build systems') });
+    } else if (normalized === 'theme' || normalized === 'phosphor') {
+      const next = cycleTheme(1);
+      renderTerminalOutput(input, [`phosphor mode: ${THEME_LABELS[next] || next}`]);
+    } else if (normalized === 'email' || normalized === 'copy email') {
+      copyText('adrianm2003az@gmail.com').then((ok) => {
+        renderTerminalOutput(input, ok
+          ? ['adrianm2003az@gmail.com copied to clipboard']
+          : ['clipboard unavailable — adrianm2003az@gmail.com']);
+        setCommandLine('', true);
+      });
+      return;
+    } else if (normalized === 'matrix' || normalized === 'overdrive') {
+      activateOverdrive();
+      renderTerminalOutput(input, [
+        'overdrive engaged',
+        'neon bloom ↑ · city speed max · scanlines hot',
+        'type "clear" to dismiss',
+      ]);
     } else if (normalized === 'ls' || normalized === 'ls .' || normalized === 'ls ./') {
       renderTerminalOutput(input, ROOT_COMMANDS);
     } else if (normalized === 'pwd') {
@@ -250,6 +437,20 @@
       navBtns.forEach(b => b.classList.remove('active'));
       crumb.textContent = '~/terminal';
       screen.innerHTML = '';
+    } else if (
+      window.SiteAdmin
+      && (normalized.startsWith('sudo')
+        || normalized.startsWith('admin ')
+        || normalized === 'admin')
+    ) {
+      window.SiteAdmin.runTerminalCommand(input, normalized).then((lines) => {
+        renderTerminalOutput(input, lines || [
+          `command not found: ${input}`,
+          'type "help" for available commands',
+        ]);
+        setCommandLine('', true);
+      });
+      return;
     } else {
       renderTerminalOutput(input, [
         `command not found: ${input}`,
@@ -286,6 +487,17 @@
       'ls',
       'pwd',
       'clear',
+      'whoami',
+      'neofetch',
+      'weather',
+      'fortune',
+      'uptime',
+      'ping',
+      'cowsay',
+      'theme',
+      'email',
+      'stats',
+      'matrix',
     ];
     const matches = [...new Set(commands.filter((command) => command.startsWith(current)))];
     if (matches.length === 1) {
@@ -351,6 +563,8 @@
   }, 1000);
 
   // Init
+  loadSavedTheme();
+  bumpVisitCount();
   setView('home');
 
   // Minimize / expand toggle — fades the terminal so the city is visible
@@ -361,15 +575,342 @@
     minimized = v;
     stage.classList.toggle('minimized', v);
     minBtn.classList.toggle('is-min', v);
-    minBtn.querySelector('.mb-label').textContent = v ? 'SHOW.UI' : 'HIDE.UI';
+    minBtn.querySelector('.mb-label').textContent = v ? 'SHOW' : 'HIDE';
     minBtn.title = v ? 'Restore terminal' : 'Hide terminal — show city';
   }
   minBtn.addEventListener('click', () => setMin(!minimized));
+
+  let projectModal = null;
+  let bootActive = false;
+  const bootScreen = document.getElementById('boot-screen');
+  const bootLog = document.getElementById('boot-log');
+  const bootBar = document.getElementById('boot-bar');
+  let bootTimer = null;
+
   // Esc to toggle, also `b` for "background"
   window.addEventListener('keydown', (e) => {
+    if (bootActive && bootScreen && !bootScreen.classList.contains('is-done')) return;
+    if (projectModal && e.key === 'Escape') {
+      e.preventDefault();
+      closeProjectModal();
+      return;
+    }
     if (isEditableTarget(e.target)) return;
     if (e.key === 'Escape' || e.key === 'b' || e.key === 'B') setMin(!minimized);
   });
+
+  const VIEW_KEYS = {
+    '0': 'home', '1': 'projects', '2': 'about', '3': 'log', '4': 'gallery', '5': 'contact',
+  };
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && projectModal) return;
+    if (bootActive && bootScreen && !bootScreen.classList.contains('is-done')) {
+      if (e.key !== 'Shift' && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Meta') {
+        finishBoot();
+      }
+      return;
+    }
+    if (isEditableTarget(e.target)) return;
+    if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      placeCaretAtEnd(cmd);
+      return;
+    }
+    if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      renderTerminalOutput('help', COMMAND_HELP);
+      setCommandLine('', true);
+      return;
+    }
+    const view = VIEW_KEYS[e.key];
+    if (view) {
+      e.preventDefault();
+      setView(view);
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const idx = VIEW_ORDER.indexOf(activeView);
+      setView(VIEW_ORDER[(idx - 1 + VIEW_ORDER.length) % VIEW_ORDER.length]);
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const idx = VIEW_ORDER.indexOf(activeView);
+      setView(VIEW_ORDER[(idx + 1) % VIEW_ORDER.length]);
+      return;
+    }
+    if ((e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      cycleTheme(1);
+      showToast(`◆ PHOSPHOR · ${THEME_LABELS[document.body.dataset.theme || 'default']}`);
+    }
+  });
+
+  // --- Project detail modal ---
+  function closeProjectModal() {
+    if (projectModal) {
+      projectModal.remove();
+      projectModal = null;
+    }
+  }
+
+  function openProjectModal(card) {
+    closeProjectModal();
+    const title = card.querySelector('h3')?.textContent?.trim() || 'PROJECT';
+    const desc = card.querySelector('p')?.textContent?.trim() || '';
+    const status = card.querySelector('.tag')?.textContent?.trim() || '';
+    const chips = [...card.querySelectorAll('.prj-chips span')].map((el) => el.textContent.trim());
+    const sn = card.getAttribute('data-sn') || '0000';
+    const github = card.getAttribute('data-github') || '';
+
+    projectModal = document.createElement('div');
+    projectModal.className = 'prj-modal-backdrop';
+    const repoBtn = github
+      ? `<a href="${escapeHtml(github)}" target="_blank" rel="noreferrer">▶ VIEW REPO</a>`
+      : '';
+    projectModal.innerHTML = `
+      <article class="prj-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+        <div class="prj-modal-hd">
+          <h3>${escapeHtml(title)}</h3>
+          <button type="button" class="prj-modal-close" aria-label="Close">ESC</button>
+        </div>
+        <div class="prj-modal-body">
+          <p>${escapeHtml(desc)}</p>
+          <div class="prj-modal-chips">${chips.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>
+          <div class="prj-modal-actions">${repoBtn}</div>
+        </div>
+        <div class="prj-modal-foot">// serial ${escapeHtml(sn)} · status ${escapeHtml(status)} · click outside to close</div>
+      </article>
+    `;
+    projectModal.addEventListener('click', (ev) => {
+      if (ev.target === projectModal) closeProjectModal();
+    });
+    projectModal.querySelector('.prj-modal-close')?.addEventListener('click', closeProjectModal);
+    document.body.appendChild(projectModal);
+  }
+
+  function wireProjectCards() {
+    screen.querySelectorAll('.prj').forEach((card) => {
+      card.addEventListener('click', () => openProjectModal(card));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openProjectModal(card);
+        }
+      });
+    });
+  }
+
+  // --- Live sys stats ---
+  const sysBars = document.getElementById('sys-bars');
+  const statState = { cpu: 62, mem: 78, net: 41 };
+
+  function driftStat(key, min, max) {
+    const delta = (Math.random() - 0.5) * 14;
+    statState[key] = Math.max(min, Math.min(max, statState[key] + delta));
+    return Math.round(statState[key]);
+  }
+
+  function updateSysBars() {
+    if (!sysBars) return;
+    sysBars.querySelectorAll('.bar').forEach((bar) => {
+      const key = bar.dataset.stat;
+      if (!key) return;
+      const ranges = { cpu: [38, 88], mem: [55, 92], net: [12, 74] };
+      const [lo, hi] = ranges[key] || [20, 80];
+      const val = driftStat(key, lo, hi);
+      const fill = bar.querySelector('.fill');
+      const label = bar.querySelector('.bv');
+      if (fill) fill.style.width = `${val}%`;
+      if (label) label.textContent = `${val}%`;
+    });
+  }
+  setInterval(updateSysBars, 2200);
+  updateSysBars();
+
+  // --- Environment HUD (sky phase + weather) ---
+  const envPhase = document.getElementById('env-phase');
+  const envWeather = document.getElementById('env-weather');
+  const envPhosphor = document.getElementById('env-phosphor');
+
+  function phaseLabel(hour) {
+    if (hour >= 5 && hour < 12) return 'MORNING';
+    if (hour >= 12 && hour < 17) return 'AFTERNOON';
+    if (hour >= 17 && hour < 21) return 'EVENING';
+    return 'NIGHT';
+  }
+
+  function weatherLabel(w) {
+    if (!w) return 'sky sync pending';
+    if (w.rain > 0.55) return 'RAIN // heavy precipitation';
+    if (w.rain > 0.2) return 'RAIN // light showers';
+    if (w.fog > 0.35) return 'FOG // low visibility';
+    if (w.cloud > 0.55) return 'CLOUDY // overcast';
+    return 'CLEAR // neon horizon';
+  }
+
+  function getWeatherLines() {
+    const w = window.CityEnvironment?.getWeather?.();
+    const solar = window.CityEnvironment?.getLocalSolar?.() || {};
+    const phase = phaseLabel(solar.hour || new Date().getHours());
+    return [
+      `phase: ${phase.toLowerCase()}`,
+      `condition: ${weatherLabel(w)}`,
+      `rain: ${w ? Math.round(w.rain * 100) : 0}% · fog: ${w ? Math.round(w.fog * 100) : 0}%`,
+      `source: ${w?.source || 'local estimate'}`,
+    ];
+  }
+
+  function updateEnvHud() {
+    const solar = window.CityEnvironment?.getLocalSolar?.() || { hour: new Date().getHours() };
+    const theme = document.body.dataset.theme || 'default';
+    if (envPhase) envPhase.textContent = phaseLabel(solar.hour);
+    if (envWeather) envWeather.textContent = weatherLabel(window.CityEnvironment?.getWeather?.());
+    if (envPhosphor) envPhosphor.textContent = THEME_LABELS[theme] || 'CYAN';
+  }
+  setInterval(updateEnvHud, 5000);
+  updateEnvHud();
+
+  // --- Overdrive / Konami ---
+  const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+  let konamiIdx = 0;
+  let overdriveOn = false;
+
+  function showToast(msg) {
+    const existing = document.querySelector('.overdrive-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'overdrive-toast';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3200);
+  }
+
+  function activateOverdrive() {
+    if (overdriveOn) return;
+    overdriveOn = true;
+    document.body.classList.add('overdrive-mode');
+    showToast('◆ OVERDRIVE MODE ENGAGED');
+    const speedInput = document.getElementById('city-speed');
+    if (speedInput) {
+      speedInput.value = '2.5';
+      speedInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (bootActive) return;
+    if (isEditableTarget(e.target)) return;
+    if (e.key === KONAMI[konamiIdx]) {
+      konamiIdx += 1;
+      if (konamiIdx >= KONAMI.length) {
+        konamiIdx = 0;
+        activateOverdrive();
+      }
+    } else {
+      konamiIdx = e.key === KONAMI[0] ? 1 : 0;
+    }
+  });
+
+  // --- Floppy save easter egg ---
+  const floppyBtn = document.getElementById('floppy-btn');
+  if (floppyBtn) {
+    floppyBtn.addEventListener('click', () => {
+      floppyBtn.classList.add('is-saving');
+      floppyBtn.querySelector('.floppy-label').textContent = 'WRITING...';
+      setTimeout(() => {
+        floppyBtn.classList.remove('is-saving');
+        floppyBtn.querySelector('.floppy-label').textContent = 'SAVED ✓';
+        showToast('// state written to SAVE.DAT on A:');
+        setTimeout(() => {
+          floppyBtn.querySelector('.floppy-label').textContent = 'SAVE.DAT';
+        }, 2400);
+      }, 900);
+    });
+  }
+
+  // --- Boot sequence (once per session) ---
+  const BOOT_LINES = [
+    'ADRIAN-OS BIOS v4.2.1 · CMU/ECE build',
+    '',
+    'POST .......... OK',
+    'Checking RAM 8192MB ........ OK',
+    'Mounting /home/adrian ...... OK',
+    'Loading pixel skyline renderer',
+    'Syncing github telemetry ..... OK',
+    'Fetching open-meteo weather .. OK',
+    'Starting terminal shell ...... OK',
+    '',
+    'Welcome, operator.',
+  ];
+
+  function finishBoot() {
+    if (!bootScreen || bootScreen.classList.contains('is-done')) return;
+    bootActive = false;
+    if (bootTimer) clearTimeout(bootTimer);
+    bootScreen.classList.add('is-done');
+    try { sessionStorage.setItem('bootDone', '1'); } catch (_) {}
+  }
+
+  function runBoot() {
+    if (!bootScreen || !bootLog) return;
+    const reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let skip = reducedMotion;
+    try { if (sessionStorage.getItem('bootDone') === '1') skip = true; } catch (_) {}
+    if (skip) {
+      bootScreen.classList.add('is-done');
+      return;
+    }
+
+    bootActive = true;
+    bootScreen.classList.remove('is-done');
+    bootLog.textContent = '';
+    let line = 0;
+    let progress = 0;
+
+    const tick = () => {
+      if (line < BOOT_LINES.length) {
+        bootLog.textContent += `${BOOT_LINES[line]}\n`;
+        line += 1;
+        progress = Math.min(100, Math.round((line / BOOT_LINES.length) * 100));
+        if (bootBar) bootBar.style.width = `${progress}%`;
+        bootTimer = setTimeout(tick, line === 1 ? 120 : 85 + Math.random() * 90);
+      } else {
+        bootTimer = setTimeout(finishBoot, 420);
+      }
+    };
+    tick();
+  }
+
+  runBoot();
+
+  // --- Phosphor theme button ---
+  const themeBtn = document.getElementById('theme-btn');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const next = cycleTheme(1);
+      showToast(`◆ PHOSPHOR · ${THEME_LABELS[next]}`);
+    });
+  }
+
+  // --- Idle skyline mode (auto-hide terminal after inactivity) ---
+  const IDLE_MS = 90000;
+  let idleTimer = null;
+  function resetIdleTimer() {
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (!minimized && !bootActive && !projectModal) {
+        setMin(true);
+        showToast('// idle · skyline mode engaged');
+      }
+    }, IDLE_MS);
+  }
+  ['mousemove', 'keydown', 'click', 'touchstart'].forEach((ev) => {
+    window.addEventListener(ev, resetIdleTimer, { passive: true });
+  });
+  resetIdleTimer();
 
   // Populate GitHub contribution history + Monkeytype widgets when home view renders.
   const GITHUB_USER = 'TechnicalDree';

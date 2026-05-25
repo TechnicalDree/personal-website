@@ -1,15 +1,18 @@
 // Pixel synthwave city — signature skyline edition.
-// Renders the 640x360 artboard into a dense backing canvas for sharper pixel detail.
+// Renders the 640x360 artboard into a denser backing canvas, with a finer
+// sub-pixel facade pass for crisper building detail.
 (function () {
   const canvas = document.getElementById('bg');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = 640, H = 360;
-  const RENDER_SCALE = 4;
+  const DETAIL_SCALE = 2;
+  const RENDER_SCALE = 3;
+  const CANVAS_SCALE = RENDER_SCALE * DETAIL_SCALE;
   let citySpeed = 1;
   let cityT = 0;
-  canvas.width = W * RENDER_SCALE;
-  canvas.height = H * RENDER_SCALE;
+  canvas.width = W * CANVAS_SCALE;
+  canvas.height = H * CANVAS_SCALE;
   ctx.imageSmoothingEnabled = false;
 
   function fit() {
@@ -66,7 +69,114 @@
     streetMid:  '#061827',
   };
 
-  // 8x8 Bayer matrix gives richer "more bits" gradients without smoothing.
+  function remapHex(hex, map) {
+    if (!hex || !map) return hex;
+    return window.PhosphorTheme ? PhosphorTheme.remapHex(hex, map) : hex;
+  }
+
+  function remapBuilding(b, map) {
+    b.color = remapHex(b.color, map);
+    b.accent = remapHex(b.accent, map);
+    for (let i = 0; i < b.windows.length; i++) {
+      b.windows[i].color = remapHex(b.windows[i].color, map);
+    }
+    for (let i = 0; i < b.lightBands.length; i++) {
+      b.lightBands[i].color = remapHex(b.lightBands[i].color, map);
+    }
+    for (let i = 0; i < b.pipes.length; i++) {
+      b.pipes[i].color = remapHex(b.pipes[i].color, map);
+    }
+    for (let i = 0; i < b.decks.length; i++) {
+      b.decks[i].color = remapHex(b.decks[i].color, map);
+    }
+    if (b.sign) b.sign.color = remapHex(b.sign.color, map);
+  }
+
+  function remapCityScene(fromTheme, toTheme) {
+    if (!window.PhosphorTheme) return;
+    const map = PhosphorTheme.buildRemap(fromTheme, toTheme);
+    [layer1, layer2, layer3, layer4].forEach((layer) => {
+      layer.forEach((b) => remapBuilding(b, map));
+    });
+    for (let i = 0; i < vehicles.length; i++) {
+      vehicles[i].col = remapHex(vehicles[i].col, map);
+      vehicles[i].trail = remapHex(vehicles[i].trail, map);
+    }
+    for (let i = 0; i < airships.length; i++) {
+      airships[i].body = remapHex(airships[i].body, map);
+      airships[i].glow = remapHex(airships[i].glow, map);
+    }
+    for (let i = 0; i < people.length; i++) {
+      people[i].hatColor = remapHex(people[i].hatColor, map);
+      people[i].bodyColor = remapHex(people[i].bodyColor, map);
+      people[i].legColor = remapHex(people[i].legColor, map);
+    }
+    for (let i = 0; i < groundCars.length; i++) {
+      groundCars[i].color = remapHex(groundCars[i].color, map);
+      groundCars[i].headlight = remapHex(groundCars[i].headlight, map);
+      groundCars[i].taillight = remapHex(groundCars[i].taillight, map);
+    }
+    for (let i = 0; i < robots.length; i++) {
+      robots[i].body = remapHex(robots[i].body, map);
+      robots[i].glow = remapHex(robots[i].glow, map);
+      robots[i].eye = remapHex(robots[i].eye, map);
+    }
+    for (let i = 0; i < buses.length; i++) {
+      buses[i].body = remapHex(buses[i].body, map);
+      buses[i].stripe = remapHex(buses[i].stripe, map);
+    }
+    for (let i = 0; i < overpassPanels.length; i++) {
+      overpassPanels[i].color = remapHex(overpassPanels[i].color, map);
+    }
+    train.color = remapHex(train.color, map);
+    train.accent = remapHex(train.accent, map);
+  }
+
+  let themePulse = 0;
+  let themePulseColor = COL.cyan;
+
+  function triggerThemePulse() {
+    const p = window.PhosphorTheme ? PhosphorTheme.get(phosphorThemeName) : null;
+    themePulseColor = (p && p.pulse) || COL.cyan;
+    themePulse = 1;
+  }
+
+  function drawThemePulse() {
+    if (themePulse <= 0.008) {
+      themePulse = 0;
+      return;
+    }
+    const sweepY = ((1 - themePulse) * H) | 0;
+    ctx.fillStyle = themePulseColor;
+    ctx.globalAlpha = themePulse * 0.55;
+    ctx.fillRect(0, sweepY, W, 3);
+    ctx.globalAlpha = themePulse * 0.14;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    themePulse *= 0.88;
+  }
+
+  let phosphorThemeName = window.PhosphorTheme ? PhosphorTheme.readSaved() : 'default';
+  let lastPhosphorTheme = phosphorThemeName;
+  let themeWash = null;
+
+  function syncColFromTheme(name) {
+    if (!window.PhosphorTheme) return;
+    const palette = PhosphorTheme.get(name);
+    Object.assign(COL, palette.col);
+    themeWash = palette.wash || null;
+    phosphorThemeName = name;
+  }
+  syncColFromTheme(phosphorThemeName);
+
+  function triggerThemeSweep() {
+    const root = document.getElementById('bg-parallax');
+    if (!root) return;
+    root.classList.remove('theme-sweep');
+    void root.offsetWidth;
+    root.classList.add('theme-sweep');
+  }
+
   const BAYER = [
     [ 0,32, 8,40, 2,34,10,42],
     [48,16,56,24,50,18,58,26],
@@ -80,6 +190,20 @@
   function lerp(a,b,t){return a+(b-a)*t;}
   function mix(c1,c2,t){return [lerp(c1[0],c2[0],t),lerp(c1[1],c2[1],t),lerp(c1[2],c2[2],t)];}
   function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
+  function d(v) { return Math.round(v * DETAIL_SCALE); }
+  function dz(v) { return Math.max(1, Math.round(v * DETAIL_SCALE)); }
+  function baseTransform() {
+    ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+  }
+  function withDetailTransform(fn) {
+    const m = ctx.getTransform();
+    ctx.save();
+    ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, m.e, m.f);
+    ctx.imageSmoothingEnabled = false;
+    fn();
+    ctx.restore();
+  }
 
   // ---------- STARS (multi-layer) ----------
   const stars = [];
@@ -104,22 +228,62 @@
     [COL.grnLed, COL.cyan, '#5bb9d6'],
     ['#7aa9d8', '#315f88', '#b8ecff'],
   ];
+
+  const SIMPLE_BUILDING_KINDS = ['block', 'pyramid', 'tower', 'spire', 'slant', 'pagoda', 'notched', 'needle', 'stacked', 'scaffold', 'billboard', 'twin'];
+  const COMPLEX_BUILDING_KINDS = ['megaTwin', 'skyGate', 'steppedNeedle', 'holoTower', 'tieredTemple', 'lattice', 'crownTower', 'tapered', 'podiumSpire'];
+  function pickBuildingKind(w, h) {
+    if (h > 98 && w > 24 && Math.random() < 0.68) return pick(COMPLEX_BUILDING_KINDS);
+    if (h > 70 && w > 18 && Math.random() < 0.24) return pick(COMPLEX_BUILDING_KINDS);
+    return pick(SIMPLE_BUILDING_KINDS);
+  }
+
+  function addWindowGrid(b, opts) {
+    const winW = opts.winW || 3;
+    const winH = opts.winH || 3;
+    const gapX = opts.gapX || 2;
+    const gapY = opts.gapY || 2;
+    const cols = Math.max(1, Math.floor((b.w - 4) / (winW + gapX)));
+    const rows = Math.max(1, Math.floor((b.h - 6) / (winH + gapY)));
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        let density = opts.winDensity;
+        if (b.windowStyle === 'stripes') density *= (r % 3 === 0) ? 1.75 : 0.32;
+        if (b.windowStyle === 'clusters') density *= ((c + r) % 4 < 2) ? 1.35 : 0.22;
+        if (b.windowStyle === 'vertical') density *= (c % 3 === 0) ? 1.55 : 0.28;
+        if (b.windowStyle === 'lobby') density *= r > rows * 0.7 ? 1.65 : 0.38;
+        if (b.windowStyle === 'fullGrid') density *= 1.8;
+        if (b.windowStyle === 'pinstripes') density *= (c % 2 === 0) ? 1.95 : 0.18;
+        if (Math.random() < density) {
+          const col = pick(b.palette);
+          b.windows.push({
+            x: b.x + 2 + c * (winW + gapX),
+            y: b.y + 4 + r * (winH + gapY),
+            w: winW, h: winH,
+            color: col,
+            phase: Math.random() * Math.PI * 2,
+            speed: 0.005 + Math.random() * 0.04,
+            alwaysOn: Math.random() < 0.28,
+          });
+        }
+      }
+    }
+  }
+
   function mkLayer(opts) {
     const out = [];
     let x = -10;
     while (x < W + 20) {
       const w = (opts.wMin + Math.random() * (opts.wMax - opts.wMin)) | 0;
       const h = (opts.hMin + Math.random() * (opts.hMax - opts.hMin)) | 0;
-      const kinds = ['block', 'pyramid', 'tower', 'spire', 'slant', 'pagoda', 'notched', 'needle', 'stacked', 'scaffold', 'billboard', 'twin'];
       const b = {
         x, y: opts.baseY - h, w, h,
         color: opts.color,
         accent: Math.random() < 0.5 ? COL.mag : COL.cyan,
         windows: [],
-        kind: kinds[(Math.random() * kinds.length) | 0],
+        kind: pickBuildingKind(w, h),
         ribs: Math.random() < 0.55,
         crown: Math.random() < 0.45,
-        windowStyle: pick(['sparse', 'stripes', 'clusters', 'vertical', 'lobby']),
+        windowStyle: pick(['sparse', 'stripes', 'clusters', 'vertical', 'lobby', 'pinstripes']),
         facade: pick(['panelGrid', 'vents', 'shafts', 'catwalks', 'mixed']),
         palette: pick(WINDOW_PALETTES),
         skybridge: null,
@@ -130,33 +294,7 @@
         rooftop: [],
       };
       // Window grid (deterministic windows from seeded rand)
-      const winW = opts.winW || 3;
-      const winH = opts.winH || 3;
-      const gapX = opts.gapX || 2;
-      const gapY = opts.gapY || 2;
-      const cols = Math.max(1, Math.floor((w - 4) / (winW + gapX)));
-      const rows = Math.max(1, Math.floor((h - 6) / (winH + gapY)));
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          let density = opts.winDensity;
-          if (b.windowStyle === 'stripes') density *= (r % 3 === 0) ? 1.75 : 0.32;
-          if (b.windowStyle === 'clusters') density *= ((c + r) % 4 < 2) ? 1.35 : 0.22;
-          if (b.windowStyle === 'vertical') density *= (c % 3 === 0) ? 1.55 : 0.28;
-          if (b.windowStyle === 'lobby') density *= r > rows * 0.7 ? 1.65 : 0.38;
-          if (Math.random() < density) {
-            const col = pick(b.palette);
-            b.windows.push({
-              x: b.x + 2 + c * (winW + gapX),
-              y: b.y + 4 + r * (winH + gapY),
-              w: winW, h: winH,
-              color: col,
-              phase: Math.random() * Math.PI * 2,
-              speed: 0.005 + Math.random() * 0.04,
-              alwaysOn: Math.random() < 0.28,
-            });
-          }
-        }
-      }
+      addWindowGrid(b, opts);
       if (h > 55 && Math.random() < 0.5) {
         const bandCount = 1 + ((Math.random() * 2) | 0);
         for (let i = 0; i < bandCount; i++) {
@@ -242,31 +380,113 @@
     return out;
   }
 
+  function makeLandmark(cfg) {
+    const b = {
+      x: cfg.x,
+      y: cfg.baseY - cfg.h,
+      w: cfg.w,
+      h: cfg.h,
+      color: cfg.color,
+      accent: cfg.accent || pick([COL.cyan, COL.mag, COL.yel]),
+      windows: [],
+      kind: cfg.kind,
+      ribs: cfg.ribs !== undefined ? cfg.ribs : true,
+      crown: cfg.crown !== undefined ? cfg.crown : true,
+      windowStyle: cfg.windowStyle || 'fullGrid',
+      facade: cfg.facade || 'mixed',
+      palette: cfg.palette || pick(WINDOW_PALETTES),
+      skybridge: cfg.skybridge || null,
+      lightBands: [],
+      pipes: [],
+      decks: [],
+      sign: cfg.sign ? {
+        text: cfg.sign,
+        y: cfg.baseY - cfg.h + (cfg.signY || Math.max(10, (cfg.h * 0.34) | 0)),
+        color: cfg.signColor || cfg.accent || COL.cyan,
+        flicker: cfg.x * 0.17,
+        vertical: !!cfg.verticalSign,
+      } : null,
+      rooftop: [],
+    };
+
+    addWindowGrid(b, {
+      winW: cfg.winW || 1,
+      winH: cfg.winH || 2,
+      gapX: cfg.gapX || 2,
+      gapY: cfg.gapY || 2,
+      winDensity: cfg.winDensity || 0.38,
+    });
+
+    for (let y = b.y + 14; y < b.y + b.h - 12; y += cfg.bandStep || 24) {
+      b.lightBands.push({
+        y,
+        h: y % 3 === 0 ? 2 : 1,
+        color: pick([b.accent, COL.cyanDk, COL.magDk, COL.amber, COL.violet]),
+        alpha: 0.28,
+      });
+    }
+
+    const pipeCount = Math.max(2, Math.min(7, (b.w / 12) | 0));
+    for (let i = 0; i < pipeCount; i++) {
+      b.pipes.push({
+        x: 4 + ((i * (b.w - 8)) / Math.max(1, pipeCount - 1) | 0),
+        y: 8 + (i % 3) * 4,
+        h: Math.max(22, b.h - 16 - (i % 4) * 8),
+        color: pick([COL.cyanDim, COL.glassBlue, COL.cyanDk, '#1d5b7d']),
+        alpha: 0.28,
+      });
+    }
+
+    const antennaCount = cfg.antennaCount || 5;
+    for (let i = 0; i < antennaCount; i++) {
+      const px = b.x + 4 + ((i * Math.max(1, b.w - 8)) / Math.max(1, antennaCount - 1));
+      b.rooftop.push({ kind: 'antenna', x: px, y: b.y, h: 7 + (i % 4) * 4 });
+    }
+    if (cfg.dish) b.rooftop.push({ kind: 'dish', x: b.x + b.w - 10, y: b.y - 7 });
+    return b;
+  }
+
   // 4 building layers for parallax depth
   const layer1 = mkLayer({ // farthest, behind moon
     wMin: 7, wMax: 18, hMin: 24, hMax: 78, baseY: 202,
     color: COL.bld1, winDensity: 0.16,
-    winW: 1, winH: 2, gapX: 2, gapY: 2,
+    winW: 1, winH: 1, gapX: 2, gapY: 2,
     gapMin: 0, gapRange: 2,
   });
   const layer2 = mkLayer({
     wMin: 12, wMax: 30, hMin: 42, hMax: 116, baseY: 232,
     color: COL.bld2, winDensity: 0.2,
-    winW: 2, winH: 2, gapX: 2, gapY: 3,
+    winW: 1, winH: 2, gapX: 2, gapY: 2,
     gapMin: 1, gapRange: 3,
   });
   const layer3 = mkLayer({
     wMin: 20, wMax: 46, hMin: 76, hMax: 162, baseY: 270,
     color: COL.bld3, winDensity: 0.22,
-    winW: 2, winH: 3, gapX: 3, gapY: 3,
+    winW: 2, winH: 2, gapX: 2, gapY: 2,
     gapMin: 2, gapRange: 4,
   });
   const layer4 = mkLayer({ // closest
     wMin: 32, wMax: 72, hMin: 72, hMax: 168, baseY: 308,
     color: COL.bld4, winDensity: 0.2,
-    winW: 3, winH: 4, gapX: 3, gapY: 3,
+    winW: 2, winH: 3, gapX: 2, gapY: 2,
     gapMin: 2, gapRange: 6,
   });
+
+  layer2.push(
+    makeLandmark({ x: 76, baseY: 232, w: 54, h: 86, kind: 'tieredTemple', color: COL.bld2, accent: COL.cyan, sign: 'KAI', signColor: COL.yel, winDensity: 0.28, antennaCount: 3 }),
+    makeLandmark({ x: 378, baseY: 232, w: 88, h: 126, kind: 'skyGate', color: COL.bld2, accent: COL.cyan, sign: 'SYN', winDensity: 0.3, antennaCount: 6 }),
+  );
+  layer3.push(
+    makeLandmark({ x: 116, baseY: 270, w: 58, h: 148, kind: 'crownTower', color: COL.bld3, accent: COL.mag, sign: 'BYTE', winDensity: 0.34, antennaCount: 7 }),
+    makeLandmark({ x: 252, baseY: 270, w: 66, h: 156, kind: 'holoTower', color: COL.bld3, accent: COL.cyan, sign: 'SYS', signColor: COL.wht, verticalSign: true, winDensity: 0.42, dish: true }),
+    makeLandmark({ x: 488, baseY: 270, w: 68, h: 138, kind: 'megaTwin', color: COL.bld3, accent: COL.yel, sign: 'KAI', winDensity: 0.36, antennaCount: 8 }),
+  );
+  layer4.push(
+    makeLandmark({ x: 38, baseY: 308, w: 52, h: 154, kind: 'steppedNeedle', color: COL.bld4, accent: COL.cyan, sign: 'NEO', verticalSign: true, winDensity: 0.36, antennaCount: 6 }),
+    makeLandmark({ x: 192, baseY: 308, w: 62, h: 132, kind: 'podiumSpire', color: COL.bld4, accent: COL.mag, sign: 'VOLT', signColor: COL.yel, winDensity: 0.34, antennaCount: 5 }),
+    makeLandmark({ x: 318, baseY: 308, w: 86, h: 168, kind: 'megaTwin', color: COL.bld4, accent: COL.cyan, sign: 'AETHER', winDensity: 0.42, antennaCount: 9 }),
+    makeLandmark({ x: 512, baseY: 308, w: 70, h: 146, kind: 'lattice', color: COL.bld4, accent: COL.yel, sign: 'CMU', verticalSign: true, winDensity: 0.32, antennaCount: 6 }),
+  );
 
   // ---------- VEHICLES (flying cars w/ multiple shapes) ----------
   const vehicles = [];
@@ -401,48 +621,8 @@
   const sky = document.createElement('canvas');
   sky.width = W; sky.height = H;
   const sctx = sky.getContext('2d');
-  const skyImg = sctx.createImageData(W, H);
 
-  // Multi-stop dithered gradient
-  for (let y = 0; y < H; y++) {
-    let col;
-    if (y < 70)        col = mix(COL.sky1, COL.sky2, y / 70);
-    else if (y < 140)  col = mix(COL.sky2, COL.sky3, (y - 70) / 70);
-    else if (y < 200)  col = mix(COL.sky3, COL.sky4, (y - 140) / 60);
-    else if (y < 230)  col = mix(COL.sky4, COL.sky5, (y - 200) / 30);
-    else if (y < 245)  col = mix(COL.sky5, COL.sky6, (y - 230) / 15);
-    else               col = [2, 9, 18];
-
-    for (let x = 0; x < W; x++) {
-      const b = (BAYER[y & 7][x & 7] - 31.5) / 4;
-      const i = (y * W + x) * 4;
-      skyImg.data[i]   = Math.max(0, Math.min(255, col[0] + b * 0.7));
-      skyImg.data[i+1] = Math.max(0, Math.min(255, col[1] + b * 0.7));
-      skyImg.data[i+2] = Math.max(0, Math.min(255, col[2] + b * 0.7));
-      skyImg.data[i+3] = 255;
-    }
-  }
-  sctx.putImageData(skyImg, 0, 0);
-
-  // ----- Cold urban haze, inspired by rainy blue cyberpunk city light -----
-  for (let y = 84; y < 250; y++) {
-    const t = (y - 84) / 166;
-    const width = (190 + Math.sin(y * 0.08) * 24 + t * 160) | 0;
-    sctx.fillStyle = `rgba(71, 217, 255, ${0.018 + t * 0.045})`;
-    sctx.fillRect((W - width) / 2, y, width, 1);
-  }
-  for (let i = 0; i < 18; i++) {
-    const x = (Math.random() * W) | 0;
-    const y = 92 + ((Math.random() * 145) | 0);
-    const h = 16 + ((Math.random() * 58) | 0);
-    sctx.fillStyle = Math.random() < 0.78 ? 'rgba(71,217,255,0.08)' : 'rgba(255,63,166,0.07)';
-    sctx.fillRect(x, y, 1 + ((Math.random() * 2) | 0), h);
-  }
-
-  // Moon is drawn each frame from visitor-local solar data (city-environment.js).
-
-  // ----- Clouds (long horizontal pixel strips) -----
-  function drawCloud(x, y, w, c, alpha=0.5) {
+  function drawCloud(x, y, w, c, alpha = 0.5) {
     sctx.fillStyle = c;
     sctx.globalAlpha = alpha;
     for (let i = 0; i < w; i++) {
@@ -451,28 +631,80 @@
     }
     sctx.globalAlpha = 1;
   }
-  drawCloud(20, 95, 110, '#16496a', 0.55);
-  drawCloud(150, 116, 72, '#235d7d', 0.48);
-  drawCloud(355, 88, 128, '#123d5e', 0.62);
-  drawCloud(500, 132, 86, '#1d5372', 0.42);
-  drawCloud(54, 162, 64, '#2a6f92', 0.28);
-  drawCloud(412, 176, 96, '#25617f', 0.26);
 
-  // Horizon glow line
-  const glowG = sctx.createLinearGradient(0, 230, 0, 278);
-  glowG.addColorStop(0, 'rgba(71, 217, 255, 0)');
-  glowG.addColorStop(0.42, 'rgba(71, 217, 255, 0.42)');
-  glowG.addColorStop(0.68, 'rgba(255, 63, 166, 0.18)');
-  glowG.addColorStop(1, 'rgba(71, 217, 255, 0)');
-  sctx.fillStyle = glowG;
-  sctx.fillRect(0, 230, W, 48);
-  // Sharp horizon line
-  sctx.fillStyle = COL.cyan;
-  sctx.fillRect(0, 246, W, 1);
-  sctx.fillStyle = COL.mag;
-  sctx.globalAlpha = 0.28;
-  sctx.fillRect(0, 247, W, 1);
-  sctx.globalAlpha = 1;
+  function rebakeSky() {
+    sctx.clearRect(0, 0, W, H);
+    const decor = window.PhosphorTheme
+      ? PhosphorTheme.get(phosphorThemeName).skyDecor
+      : null;
+    const hazePrefix = decor ? decor.hazeLine : 'rgba(71, 217, 255,';
+    const hazeA = decor ? decor.hazePillarA : 'rgba(71,217,255,0.08)';
+    const hazeB = decor ? decor.hazePillarB : 'rgba(255,63,166,0.07)';
+    const clouds = decor ? decor.clouds : ['#16496a', '#235d7d', '#123d5e', '#1d5372', '#2a6f92', '#25617f'];
+    const hg = decor ? decor.horizonGlow : {
+      top: 'rgba(71, 217, 255, 0)',
+      mid: 'rgba(71, 217, 255, 0.42)',
+      mag: 'rgba(255, 63, 166, 0.18)',
+      bottom: 'rgba(71, 217, 255, 0)',
+    };
+
+    const skyImg = sctx.createImageData(W, H);
+    for (let y = 0; y < H; y++) {
+      let col;
+      if (y < 70)        col = mix(COL.sky1, COL.sky2, y / 70);
+      else if (y < 140)  col = mix(COL.sky2, COL.sky3, (y - 70) / 70);
+      else if (y < 200)  col = mix(COL.sky3, COL.sky4, (y - 140) / 60);
+      else if (y < 230)  col = mix(COL.sky4, COL.sky5, (y - 200) / 30);
+      else if (y < 245)  col = mix(COL.sky5, COL.sky6, (y - 230) / 15);
+      else               col = mix(COL.sky1, [2, 9, 18], 0.5);
+
+      for (let x = 0; x < W; x++) {
+        const b = (BAYER[y & 7][x & 7] - 31.5) / 4;
+        const i = (y * W + x) * 4;
+        skyImg.data[i]   = Math.max(0, Math.min(255, col[0] + b * 0.7));
+        skyImg.data[i + 1] = Math.max(0, Math.min(255, col[1] + b * 0.7));
+        skyImg.data[i + 2] = Math.max(0, Math.min(255, col[2] + b * 0.7));
+        skyImg.data[i + 3] = 255;
+      }
+    }
+    sctx.putImageData(skyImg, 0, 0);
+
+    for (let y = 84; y < 250; y++) {
+      const t = (y - 84) / 166;
+      const width = (190 + Math.sin(y * 0.08) * 24 + t * 160) | 0;
+      sctx.fillStyle = `${hazePrefix}${0.018 + t * 0.045})`;
+      sctx.fillRect((W - width) / 2, y, width, 1);
+    }
+    for (let i = 0; i < 18; i++) {
+      const x = (Math.random() * W) | 0;
+      const y = 92 + ((Math.random() * 145) | 0);
+      const h = 16 + ((Math.random() * 58) | 0);
+      sctx.fillStyle = Math.random() < 0.78 ? hazeA : hazeB;
+      sctx.fillRect(x, y, 1 + ((Math.random() * 2) | 0), h);
+    }
+
+    drawCloud(20, 95, 110, clouds[0], 0.55);
+    drawCloud(150, 116, 72, clouds[1], 0.48);
+    drawCloud(355, 88, 128, clouds[2], 0.62);
+    drawCloud(500, 132, 86, clouds[3], 0.42);
+    drawCloud(54, 162, 64, clouds[4], 0.28);
+    drawCloud(412, 176, 96, clouds[5], 0.26);
+
+    const glowG = sctx.createLinearGradient(0, 230, 0, 278);
+    glowG.addColorStop(0, hg.top);
+    glowG.addColorStop(0.42, hg.mid);
+    glowG.addColorStop(0.68, hg.mag);
+    glowG.addColorStop(1, hg.bottom);
+    sctx.fillStyle = glowG;
+    sctx.fillRect(0, 230, W, 48);
+    sctx.fillStyle = COL.cyan;
+    sctx.fillRect(0, 246, W, 1);
+    sctx.fillStyle = COL.mag;
+    sctx.globalAlpha = 0.28;
+    sctx.fillRect(0, 247, W, 1);
+    sctx.globalAlpha = 1;
+  }
+  rebakeSky();
 
   // ---------- DRAWING HELPERS ----------
   function drawAntenna(x, y, h, color) {
@@ -631,6 +863,154 @@
     }
   }
 
+  function traceBuildingShapeD(b) {
+    const x = d(b.x);
+    const y = d(b.y);
+    const w = dz(b.w);
+    const h = dz(b.h);
+    ctx.beginPath();
+    if (b.kind === 'pyramid') {
+      ctx.moveTo(x + w * 0.18, y);
+      ctx.lineTo(x + w * 0.82, y);
+      ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x, y + h);
+      ctx.closePath();
+    } else if (b.kind === 'spire') {
+      const cap = Math.max(d(8), Math.round(h * 0.18));
+      ctx.moveTo(x + Math.round(w / 2), y);
+      ctx.lineTo(x + w, y + cap);
+      ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x, y + h);
+      ctx.lineTo(x, y + cap);
+      ctx.closePath();
+    } else if (b.kind === 'slant') {
+      const lean = Math.max(d(4), Math.round(w * 0.22));
+      ctx.moveTo(x + lean, y);
+      ctx.lineTo(x + w, y + Math.max(d(3), Math.round(lean / 2)));
+      ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x, y + h);
+      ctx.closePath();
+    } else if (b.kind === 'needle') {
+      const shaftW = Math.max(d(8), Math.round(w * 0.45));
+      const shaftX = x + Math.round((w - shaftW) / 2);
+      ctx.rect(shaftX, y + d(8), shaftW, h - d(8));
+      ctx.rect(x, y + Math.round(h * 0.48), w, Math.max(d(8), Math.round(h * 0.12)));
+    } else if (b.kind === 'twin') {
+      const gap = Math.max(d(3), Math.round(w * 0.12));
+      const towerW = Math.round((w - gap) / 2);
+      ctx.rect(x, y + d(10), towerW, h - d(10));
+      ctx.rect(x + towerW + gap, y, towerW, h);
+    } else {
+      ctx.rect(x, y, w, h);
+    }
+  }
+
+  function drawBuildingDetailPass(b, t) {
+    withDetailTransform(() => {
+      traceBuildingShapeD(b);
+      ctx.clip();
+
+      const x = d(b.x);
+      const y = d(b.y);
+      const w = dz(b.w);
+      const h = dz(b.h);
+      const bay = Math.max(d(5), Math.round((b.w / Math.max(3, Math.round(b.w / 12))) * DETAIL_SCALE));
+      const floor = Math.max(d(5), Math.round((b.h / Math.max(4, Math.round(b.h / 18))) * DETAIL_SCALE));
+
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = b.accent;
+      ctx.fillRect(x, y, w, 1);
+      ctx.fillRect(x, y, 1, h);
+      ctx.globalAlpha = 0.12;
+      ctx.fillRect(x + w - 1, y + 1, 1, Math.max(1, h - 1));
+
+      ctx.fillStyle = '#b8ecff';
+      ctx.globalAlpha = 0.08;
+      for (let px = x + bay; px < x + w - 2; px += bay) {
+        ctx.fillRect(px, y + d(4), 1, Math.max(1, h - d(8)));
+      }
+
+      ctx.fillStyle = COL.glassBlue;
+      ctx.globalAlpha = 0.14;
+      for (let py = y + floor; py < y + h - d(3); py += floor) {
+        ctx.fillRect(x + d(2), py, Math.max(1, w - d(4)), 1);
+      }
+
+      if (b.facade === 'catwalks' || b.facade === 'mixed') {
+        ctx.fillStyle = b.accent;
+        ctx.globalAlpha = 0.18;
+        for (let py = y + d(12); py < y + h - d(10); py += d(18)) {
+          ctx.fillRect(x + d(1), py, Math.max(1, w - d(2)), 1);
+          for (let px = x + d(4); px < x + w - d(3); px += d(7)) {
+            ctx.fillRect(px, py + 1, 1, d(2));
+          }
+        }
+      }
+
+      if (b.facade === 'vents' || b.facade === 'mixed') {
+        ctx.fillStyle = '#0b5f83';
+        ctx.globalAlpha = 0.2;
+        for (let py = y + d(16); py < y + h - d(8); py += d(17)) {
+          for (let px = x + d(4); px < x + w - d(8); px += d(8)) {
+            ctx.fillRect(px, py, d(2), 1);
+            ctx.fillRect(px + d(3), py, d(2), 1);
+          }
+        }
+      }
+
+      const pulse = 0.5 + 0.5 * Math.sin(t * 0.03 + b.x);
+      ctx.fillStyle = b.accent;
+      ctx.globalAlpha = 0.05 + pulse * 0.05;
+      ctx.fillRect(x + d(1), y + d(1), Math.max(1, w - d(2)), Math.max(1, h - d(2)));
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  function drawBuildingWindowsHiRes(b, t) {
+    withDetailTransform(() => {
+      traceBuildingShapeD(b);
+      ctx.clip();
+
+      for (let i = 0; i < b.windows.length; i++) {
+        const w = b.windows[i];
+        let f;
+        if (w.alwaysOn) {
+          f = 0.8 + 0.2 * Math.sin(t * w.speed + w.phase);
+        } else {
+          f = 0.5 + 0.5 * Math.sin(t * w.speed + w.phase);
+        }
+
+        const wx = d(w.x);
+        const wy = d(w.y);
+        const ww = dz(w.w);
+        const wh = dz(w.h);
+
+        if (f > 0.25) {
+          ctx.fillStyle = w.color;
+          ctx.globalAlpha = Math.min(1, f + 0.15);
+          ctx.fillRect(wx, wy, ww, wh);
+
+          ctx.globalAlpha = Math.min(0.45, f * 0.5);
+          ctx.fillStyle = '#e8fbff';
+          ctx.fillRect(wx, wy, Math.max(1, ww - 1), 1);
+
+          if (ww >= 4 && wh >= 4) {
+            ctx.globalAlpha = 0.2;
+            ctx.fillStyle = '#020914';
+            ctx.fillRect(wx + ww - 1, wy + 1, 1, wh - 1);
+            ctx.fillRect(wx + 1, wy + wh - 1, ww - 1, 1);
+            if (((w.x + w.y + i) & 1) === 0) ctx.fillRect(wx + Math.floor(ww / 2), wy + 1, 1, wh - 2);
+          }
+        } else {
+          ctx.fillStyle = COL.glassBlue;
+          ctx.globalAlpha = 0.08;
+          ctx.fillRect(wx, wy, ww, wh);
+        }
+      }
+      ctx.globalAlpha = 1;
+    });
+  }
+
   function drawBuilding(b, t) {
     drawBuildingBody(b);
     // accent top
@@ -710,22 +1090,8 @@
       ctx.globalAlpha = 1;
     }
 
-    // windows
-    for (let i = 0; i < b.windows.length; i++) {
-      const w = b.windows[i];
-      let f;
-      if (w.alwaysOn) {
-        f = 0.8 + 0.2 * Math.sin(t * w.speed + w.phase);
-      } else {
-        f = 0.5 + 0.5 * Math.sin(t * w.speed + w.phase);
-      }
-      if (f > 0.25) {
-        ctx.fillStyle = w.color;
-        ctx.globalAlpha = Math.min(1, f + 0.15);
-        ctx.fillRect(w.x, w.y, w.w, w.h);
-      }
-    }
-    ctx.globalAlpha = 1;
+    drawBuildingDetailPass(b, t);
+    drawBuildingWindowsHiRes(b, t);
 
     if (b.skybridge) {
       const dir = b.skybridge.side;
@@ -889,30 +1255,36 @@
   const streetBg = document.createElement('canvas');
   streetBg.width = W; streetBg.height = H - SIDEWALK_Y + 20;
   const stc = streetBg.getContext('2d');
-  // Sidewalk
-  stc.fillStyle = '#071827';
-  stc.fillRect(0, 0, W, 7);
-  stc.fillStyle = '#123a56';
-  stc.fillRect(0, 0, W, 1);
-  // Sidewalk tile lines
-  stc.fillStyle = '#174b6c';
-  for (let x = 0; x < W; x += 6) stc.fillRect(x, 3, 1, 4);
-  stc.fillStyle = COL.streetDark;
-  // Street body
-  stc.fillRect(0, 7, W, H - SIDEWALK_Y + 13);
-  // Center dashed line
-  stc.fillStyle = COL.cyanDk;
-  for (let x = 4; x < W; x += 14) stc.fillRect(x, 18, 8, 1);
-  // Side stripes
-  stc.fillStyle = COL.cyan;
-  stc.globalAlpha = 0.4;
-  stc.fillRect(0, 26, W, 1);
-  stc.globalAlpha = 1;
-  // neon street reflection
-  stc.fillStyle = COL.cyan;
-  stc.globalAlpha = 0.06;
-  for (let y = 8; y < 30; y++) stc.fillRect(0, y, W, 1);
-  stc.globalAlpha = 1;
+
+  function rebakeStreet() {
+    const sw = window.PhosphorTheme
+      ? (PhosphorTheme.get(phosphorThemeName).sidewalk || {})
+      : {};
+    const sidewalk = sw.base || '#071827';
+    const sidewalkEdge = sw.edge || '#123a56';
+    const sidewalkTile = sw.tile || '#174b6c';
+
+    stc.clearRect(0, 0, streetBg.width, streetBg.height);
+    stc.fillStyle = sidewalk;
+    stc.fillRect(0, 0, W, 7);
+    stc.fillStyle = sidewalkEdge;
+    stc.fillRect(0, 0, W, 1);
+    stc.fillStyle = sidewalkTile;
+    for (let x = 0; x < W; x += 6) stc.fillRect(x, 3, 1, 4);
+    stc.fillStyle = COL.streetDark;
+    stc.fillRect(0, 7, W, H - SIDEWALK_Y + 13);
+    stc.fillStyle = COL.cyanDk;
+    for (let x = 4; x < W; x += 14) stc.fillRect(x, 18, 8, 1);
+    stc.fillStyle = COL.cyan;
+    stc.globalAlpha = 0.4;
+    stc.fillRect(0, 26, W, 1);
+    stc.globalAlpha = 1;
+    stc.fillStyle = COL.cyan;
+    stc.globalAlpha = 0.06;
+    for (let y = 8; y < 30; y++) stc.fillRect(0, y, W, 1);
+    stc.globalAlpha = 1;
+  }
+  rebakeStreet();
 
   function drawStreet(t) {
     const shift = (t * 0.18) % W;
@@ -1331,8 +1703,7 @@
   function frame() {
     T++;
     cityT += citySpeed;
-    ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
-    ctx.imageSmoothingEnabled = false;
+    baseTransform();
     const solar = getSolarState();
     starVisForShoots = solar.starVisibility;
     // sky baseline
@@ -1401,7 +1772,52 @@
     // CRT flicker
     drawCRTFlicker(T);
 
+    drawThemePulse();
+    drawThemeWash();
+
     requestAnimationFrame(frame);
   }
+
+  function refreshStarColors() {
+    const starAlt = window.PhosphorTheme
+      ? PhosphorTheme.get(phosphorThemeName).starAlt
+      : '#89c8e8';
+    for (let i = 0; i < stars.length; i++) {
+      const s = stars[i];
+      s.color = Math.random() < 0.18 ? COL.cyan
+        : (Math.random() < 0.28 ? starAlt : (Math.random() < 0.34 ? COL.pink : COL.wht));
+    }
+  }
+
+  function drawThemeWash() {
+    if (!themeWash) return;
+    ctx.fillStyle = themeWash.color;
+    ctx.globalCompositeOperation = themeWash.blend || 'soft-light';
+    ctx.globalAlpha = themeWash.alpha;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  function applyPhosphorTheme(name, previous) {
+    const prev = previous !== undefined ? previous : lastPhosphorTheme;
+    if (prev !== name) remapCityScene(prev, name);
+    syncColFromTheme(name);
+    rebakeSky();
+    rebakeStreet();
+    refreshStarColors();
+    triggerThemePulse();
+    triggerThemeSweep();
+    lastPhosphorTheme = name;
+  }
+
+  window.CityBackground = { applyPhosphorTheme };
+
+  window.addEventListener('phosphor-theme', (e) => {
+    if (e.detail && e.detail.theme) {
+      applyPhosphorTheme(e.detail.theme, e.detail.previous);
+    }
+  });
+
   frame();
 })();

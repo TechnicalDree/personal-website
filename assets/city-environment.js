@@ -19,6 +19,31 @@
     source: 'default',
   };
 
+  let phosphorThemeName = window.PhosphorTheme ? PhosphorTheme.readSaved() : 'default';
+
+  function getNeonGL() {
+    if (window.PhosphorTheme) return PhosphorTheme.get(phosphorThemeName).neonGL;
+    return { a: [0.2, 0.95, 1.0], b: [1.0, 0.15, 0.75] };
+  }
+
+  function getChroma() {
+    if (window.PhosphorTheme) return PhosphorTheme.get(phosphorThemeName).chroma;
+    return [0.2, 0.95, 1.0];
+  }
+
+  function getTwilightHorizon() {
+    if (window.PhosphorTheme) return PhosphorTheme.get(phosphorThemeName).twilightHorizon;
+    return [54, 245, 255];
+  }
+
+  function syncPhosphorTheme(name) {
+    if (window.PhosphorTheme && PhosphorTheme.get(name)) phosphorThemeName = name;
+  }
+
+  window.addEventListener('phosphor-theme', (e) => {
+    if (e.detail && e.detail.theme) syncPhosphorTheme(e.detail.theme);
+  });
+
   let targetPx = 0;
   let targetPy = 0;
   let px = 0;
@@ -153,7 +178,8 @@
       tg.addColorStop(0, `rgba(255,120,60,0)`);
       tg.addColorStop(0.45, `rgba(255,90,120,${0.12 * solar.twilight})`);
       tg.addColorStop(0.72, `rgba(255,190,90,${0.22 * solar.twilight})`);
-      tg.addColorStop(1, `rgba(54,245,255,${0.06 * solar.twilight})`);
+      const th = getTwilightHorizon();
+      tg.addColorStop(1, `rgba(${th[0]},${th[1]},${th[2]},${0.06 * solar.twilight})`);
       ctx.globalCompositeOperation = 'screen';
       ctx.fillStyle = tg;
       ctx.fillRect(0, 130, W, horizonY - 100);
@@ -168,6 +194,21 @@
       ctx.globalCompositeOperation = 'screen';
       ctx.fillStyle = ng;
       ctx.fillRect(0, 0, W, 130);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // Lift the baked night gradient toward real daylight when the sun is up
+    // (mid-morning through afternoon — synthwave base stays too dark otherwise).
+    const dayLift = smoothstep(0.18, 0.88, solar.sunAlt) * (solar.sun && solar.sun.show ? 1 : 0.4);
+    if (dayLift > 0.02) {
+      const dg = ctx.createLinearGradient(0, 0, 0, horizonY);
+      dg.addColorStop(0, `rgba(150, 205, 255, ${0.5 * dayLift})`);
+      dg.addColorStop(0.38, `rgba(95, 165, 230, ${0.42 * dayLift})`);
+      dg.addColorStop(0.72, `rgba(185, 220, 252, ${0.38 * dayLift})`);
+      dg.addColorStop(1, `rgba(255, 248, 215, ${0.28 * dayLift})`);
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = dg;
+      ctx.fillRect(0, 0, W, horizonY + 8);
       ctx.globalCompositeOperation = 'source-over';
     }
 
@@ -301,6 +342,9 @@
       uniform float u_fog;
       uniform float u_neon;
       uniform float u_isDay;
+      uniform vec3 u_neonA;
+      uniform vec3 u_neonB;
+      uniform vec3 u_chroma;
 
       float hash(vec2 p) {
         return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -335,13 +379,13 @@
         vec2 cp2 = uv - vec2(0.88, 0.42);
         float bloom = u_neon * (exp(-dot(cp, cp) * 3.2) * 0.14 + exp(-dot(cp2, cp2) * 2.8) * 0.12) * (0.55 + 0.45 * pulse);
         alpha += bloom;
-        col = mix(col, vec3(0.2, 0.95, 1.0), bloom * 2.2 * (1.0 - u_isDay * 0.35));
-        col = mix(col, vec3(1.0, 0.15, 0.75), bloom * 1.6 * u_neon);
+        col = mix(col, u_neonA, bloom * 2.2 * (1.0 - u_isDay * 0.35));
+        col = mix(col, u_neonB, bloom * 1.6 * u_neon);
 
         float edge = abs(uv.x - 0.5) * 2.0;
-        float chroma = u_neon * pow(edge, 2.2) * 0.04 * (1.0 - u_isDay * 0.2);
-        alpha += chroma;
-        col += vec3(chroma * 0.3, chroma * 0.05, chroma * 0.4);
+        float chromaAmt = u_neon * pow(edge, 2.2) * 0.04 * (1.0 - u_isDay * 0.2);
+        alpha += chromaAmt;
+        col += u_chroma * chromaAmt;
 
         gl_FragColor = vec4(col, clamp(alpha, 0.0, 0.88));
       }
@@ -371,6 +415,9 @@
       fog: gl.getUniformLocation(program, 'u_fog'),
       neon: gl.getUniformLocation(program, 'u_neon'),
       isDay: gl.getUniformLocation(program, 'u_isDay'),
+      neonA: gl.getUniformLocation(program, 'u_neonA'),
+      neonB: gl.getUniformLocation(program, 'u_neonB'),
+      chroma: gl.getUniformLocation(program, 'u_chroma'),
     };
 
     gl.disable(gl.DEPTH_TEST);
@@ -405,6 +452,8 @@
     if (weather.source === 'default') fog = clamp(fog + 0.05, 0, 1);
 
     const neonBoost = rm * (0.55 + solar.starVisibility * 0.75 + fog * 0.25);
+    const neonGL = getNeonGL();
+    const chroma = getChroma();
 
     gl.useProgram(program);
     gl.uniform2f(locs.res, fxCanvas.width, fxCanvas.height);
@@ -413,6 +462,9 @@
     gl.uniform1f(locs.fog, fog);
     gl.uniform1f(locs.neon, neonBoost);
     gl.uniform1f(locs.isDay, solar.sun.show ? 1 : 0);
+    gl.uniform3f(locs.neonA, neonGL.a[0], neonGL.a[1], neonGL.a[2]);
+    gl.uniform3f(locs.neonB, neonGL.b[0], neonGL.b[1], neonGL.b[2]);
+    gl.uniform3f(locs.chroma, chroma[0], chroma[1], chroma[2]);
 
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);

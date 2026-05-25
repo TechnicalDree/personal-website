@@ -16,14 +16,32 @@
   <div class="vignette"></div>
   <div class="scanlines"></div>
 
+  <button id="theme-btn" class="theme-btn" title="Cycle CRT phosphor (T)" aria-label="Cycle CRT phosphor theme">
+    <span class="theme-dot"></span>
+    <span class="theme-label">PHOSPHOR</span>
+  </button>
   <button id="minimize-btn" class="minimize-btn" title="Toggle terminal" aria-label="Toggle terminal">
     <span class="mb-icon"></span>
-    <span class="mb-label">HIDE.UI</span>
+    <span class="mb-label">HIDE</span>
   </button>
   <div class="city-speed" aria-label="City background speed control">
     <label for="city-speed">CITY.SPEED</label>
     <input id="city-speed" type="range" min="0" max="2.5" step="0.1" value="1">
     <span id="city-speed-value">1.0x</span>
+  </div>
+  <div class="env-hud" id="env-hud" aria-label="Local sky and weather">
+    <span class="env-phase" id="env-phase">--</span>
+    <span class="env-weather" id="env-weather">syncing sky...</span>
+    <span class="env-phosphor" id="env-phosphor">CYAN</span>
+  </div>
+
+  <div id="boot-screen" class="boot-screen" aria-hidden="true">
+    <div class="boot-inner">
+      <div class="boot-logo">ADRIAN-OS</div>
+      <pre class="boot-log" id="boot-log"></pre>
+      <div class="boot-bar-wrap"><div class="boot-bar" id="boot-bar"></div></div>
+      <div class="boot-skip">press any key to skip</div>
+    </div>
   </div>
 
   <div class="stage" id="stage">
@@ -75,16 +93,16 @@
           </button>
         </nav>
 
-        <div class="mini-bars">
-          <div class="bar"><span class="bl">CPU</span><div class="track"><div class="fill cyan" style="width:62%"></div></div><span class="bv">62%</span></div>
-          <div class="bar"><span class="bl">MEM</span><div class="track"><div class="fill mag" style="width:78%"></div></div><span class="bv">78%</span></div>
-          <div class="bar"><span class="bl">NET</span><div class="track"><div class="fill yel" style="width:41%"></div></div><span class="bv">41%</span></div>
+        <div class="mini-bars" id="sys-bars">
+          <div class="bar" data-stat="cpu"><span class="bl">CPU</span><div class="track"><div class="fill cyan"></div></div><span class="bv">62%</span></div>
+          <div class="bar" data-stat="mem"><span class="bl">MEM</span><div class="track"><div class="fill mag"></div></div><span class="bv">78%</span></div>
+          <div class="bar" data-stat="net"><span class="bl">NET</span><div class="track"><div class="fill yel"></div></div><span class="bv">41%</span></div>
         </div>
 
-        <div class="floppy">
+        <button type="button" class="floppy" id="floppy-btn" title="Save state to disk" aria-label="Save state to disk">
           <div class="floppy-label">SAVE.DAT</div>
           <div class="floppy-shutter"></div>
-        </div>
+        </button>
       </aside>
 
       <!-- RIGHT: terminal screen -->
@@ -116,10 +134,6 @@
   / _ \ | | | | |_) || |  / _ \ |  \| |   | |\/| | | | |  \| | | | |/ /
  / ___ \| |_| |  _ < | | / ___ \| |\  |   | |  | | |_| | |\  | |_| / /_
 /_/   \_\____/|_| \_\___/_/   \_\_| \_|   |_|  |_|\___/|_| \_|\___/____|</pre>
-      <div class="row-head">
-        <span class="tag tag-cyan">&gt;_ whoami</span>
-        <span class="tag tag-mag">ACCESS: ROOT</span>
-      </div>
       <h1 class="glitch" data-text="I build systems from silicon to full-stack.">I build systems<br>from <span class="hl">silicon</span> to full-stack.</h1>
       <p class="lede">
         Carnegie Mellon <span class="u-cy">BS+MS Electrical &amp; Computer Engineering</span> student with a
@@ -257,7 +271,7 @@
       <h2 class="h2">PROJECTS // SELECTED_WORKS</h2>
 
       <div class="prj-grid">
-        <article class="prj">
+        <article class="prj" tabindex="0">
           <div class="prj-thumb" data-thumb="http"></div>
           <div class="prj-body">
             <div class="prj-meta"><span>[01]</span><span class="tag tag-cyan">SHIPPED</span></div>
@@ -266,7 +280,7 @@
             <div class="prj-chips"><span>Python</span><span>Sockets</span><span>HTTP/1.1</span></div>
           </div>
         </article>
-        <article class="prj">
+        <article class="prj" tabindex="0" data-github="https://github.com/TechnicalDree/Deep-Live-Cam">
           <div class="prj-thumb" data-thumb="auth"></div>
           <div class="prj-body">
             <div class="prj-meta"><span>[02]</span><span class="tag tag-yel">LIVE</span></div>
@@ -275,7 +289,7 @@
             <div class="prj-chips"><span>Python</span><span>Docker</span><span>Crypto</span></div>
           </div>
         </article>
-        <article class="prj">
+        <article class="prj" tabindex="0">
           <div class="prj-thumb" data-thumb="privacy"></div>
           <div class="prj-body">
             <div class="prj-meta"><span>[03]</span><span class="tag tag-mag">BETA</span></div>
@@ -284,7 +298,7 @@
             <div class="prj-chips"><span>React</span><span>JavaScript</span><span>MV3</span></div>
           </div>
         </article>
-        <article class="prj">
+        <article class="prj" tabindex="0" data-github="https://github.com/TechnicalDree/yaca-chat-app">
           <div class="prj-thumb" data-thumb="chat"></div>
           <div class="prj-body">
             <div class="prj-meta"><span>[04]</span><span class="tag tag-ghost">ARCHIVED</span></div>
@@ -293,7 +307,7 @@
             <div class="prj-chips"><span>TypeScript</span><span>Node.js</span><span>MongoDB</span></div>
           </div>
         </article>
-        <article class="prj">
+        <article class="prj" tabindex="0">
           <div class="prj-thumb" data-thumb="database"></div>
           <div class="prj-body">
             <div class="prj-meta"><span>[05]</span><span class="tag tag-cyan">SYSTEMS</span></div>
@@ -485,8 +499,10 @@
 <script src="assets/github-history.js"></script>
 <script src="assets/monkeytype-history.js"></script>
 <script src="assets/dashboard-snapshots.js"></script>
+<script src="assets/phosphor-theme.js"></script>
 <script src="assets/city-environment.js"></script>
 <script src="assets/bg.js"></script>
+<script src="assets/content-admin.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

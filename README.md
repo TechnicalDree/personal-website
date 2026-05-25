@@ -22,8 +22,14 @@ Then visit <http://localhost:8000>.
 - `assets/bg.js` — animated pixel-city canvas (sky gradient, parallax buildings,
   flying cars, drones, walking pedestrians, shooting stars).
 - `assets/app.js` — view switching, typewriter prompt, uptime/clock, GitHub
-  heatmap and Monkeytype chart, HIDE.UI / SHOW.UI minimize toggle (also `Esc` /
+  heatmap and Monkeytype chart, HIDE / SHOW minimize toggle (also `Esc` /
   `B`).
+- `assets/site-content.json` — editable portfolio copy (projects, experience,
+  about text, contact channels, sidebar profile).
+- `assets/content-admin.js` — loads `site-content.json`, hydrates the page, and
+  unlocks inline editing after admin login.
+- `assets/admin-config.example.js` — template for your admin password hash.
+  Copy to `assets/admin-config.js` (gitignored) before using the editor.
 - `assets/github-history.js` / `.json` — generated GitHub contribution calendar
   data for the home page.
 - `assets/monkeytype-history.js` / `.json` — optional generated Monkeytype data
@@ -45,8 +51,45 @@ Then visit <http://localhost:8000>.
 ## Controls
 
 - Click the left-side `[NN] LABEL` nav entries to switch terminal views.
-- Click `HIDE.UI` (top-right) — or press `Esc` / `B` — to fade the terminal and
+- Click `HIDE` (top-right) — or press `Esc` / `B` — to fade the terminal and
   reveal the full city background.
+
+## Edit site content (admin only)
+
+Portfolio text lives in `assets/site-content.json`. Visitors always see the
+published JSON. Only you can unlock inline editing from the terminal prompt at
+the bottom of the screen.
+
+1. Focus the command line (`/` or click it) and run:
+
+```text
+sudo your-password-here
+```
+
+The first time you run this in a browser, it saves that password locally and
+unlocks edit mode. On later visits, the same command logs you in.
+
+2. Click any highlighted field to edit it. Use **SAVE JSON** (or the floppy
+   **SAVE.DAT** button) to download an updated `site-content.json`.
+
+3. Replace `assets/site-content.json` with the downloaded file and commit/push
+   so the live site updates.
+
+Other admin commands:
+
+```text
+admin logout          end edit session
+admin passwd <new>    change password (while logged in)
+admin status          show session state
+```
+
+Optional: `assets/admin-config.js` can still define a `passwordHash` if you
+want a fixed password across browsers (`python3 scripts/hash-admin-password.py`
+generates the hash). Terminal setup via `sudo` stores the hash in
+`localStorage` for that browser only.
+
+Admin auth runs entirely in the browser on a static site, so treat the password
+as a deterrent rather than bank-grade security.
 
 ## Refresh GitHub history
 
