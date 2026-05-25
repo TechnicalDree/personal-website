@@ -1201,6 +1201,51 @@ b { color: var(--yellow); font-weight: normal; }
     linear-gradient(90deg, transparent 0 40%, #ff2fb3 41% 45%, transparent 46% 100%);
   background-size: 100% 18px, 18px 100%;
 }
+.prj-thumb[data-thumb="landmarks"] {
+  background:
+    radial-gradient(circle at 30% 40%, #f6ff7a 0 6px, transparent 7px),
+    radial-gradient(circle at 70% 55%, #36f5ff 0 8px, transparent 9px),
+    radial-gradient(circle at 50% 75%, #ff2fb3 0 5px, transparent 6px),
+    linear-gradient(180deg, #0a2840 0%, #020914 100%);
+}
+.prj-thumb[data-thumb="canny"] {
+  background:
+    repeating-linear-gradient(45deg, #36f5ff 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(-45deg, #ff2fb3 0 1px, transparent 1px 8px),
+    linear-gradient(180deg, #071d32 0%, #020914 100%);
+}
+.prj-thumb[data-thumb="swarm"] {
+  background:
+    radial-gradient(circle at 25% 65%, #36f5ff 0 4px, transparent 5px),
+    radial-gradient(circle at 50% 50%, #f6ff7a 0 4px, transparent 5px),
+    radial-gradient(circle at 75% 60%, #ff2fb3 0 4px, transparent 5px),
+    repeating-linear-gradient(0deg, #0d3451 0 12px, transparent 12px 24px),
+    #020914;
+}
+.prj-thumb[data-thumb="mosaic"] {
+  background:
+    linear-gradient(90deg, #ff2fb3 0 20%, #36f5ff 20% 40%, #f6ff7a 40% 55%, #ffcc4d 55% 70%, #36f5ff 70% 85%, #ff2fb3 85% 100%),
+    linear-gradient(180deg, #071d32 0%, #020914 100%);
+  background-blend-mode: overlay;
+  opacity: 0.92;
+}
+.prj-thumb[data-thumb="xr"] {
+  background:
+    conic-gradient(from 45deg, #36f5ff 0 25%, transparent 25% 50%, #ff2fb3 50% 75%, transparent 75% 100%),
+    radial-gradient(circle at 50% 50%, #f6ff7a 0 8px, transparent 9px),
+    #020914;
+}
+.prj-thumb[data-thumb="robot-nav"] {
+  background:
+    repeating-linear-gradient(90deg, #0d3451 0 10px, #36f5ff 10px 11px, transparent 11px 20px),
+    repeating-linear-gradient(0deg, #0d3451 0 10px, #ff2fb3 10px 11px, transparent 11px 20px),
+    #020914;
+}
+.prj-thumb[data-thumb="rover"] {
+  background:
+    linear-gradient(90deg, #36f5ff 0 30%, transparent 30% 35%, #ff2fb3 35% 65%, transparent 65% 70%, #f6ff7a 70% 100%),
+    repeating-linear-gradient(0deg, #071d32 0 6px, #020914 6px 12px);
+}
 .prj-meta { display: flex; gap: 8px; align-items: center; font-family: 'Press Start 2P', monospace; font-size: 9px; color: var(--orange); letter-spacing: 1px; }
 .prj h3 { font-family: 'Press Start 2P', monospace; font-size: 15px; color: #6ef7ff; margin: 4px 0; letter-spacing: 1px; text-shadow: var(--text-crisp-shadow), 2px 2px 0 var(--magenta-deep); }
 .prj p { font-family: 'Share Tech Mono', monospace; font-size: 18px; color: var(--text-body-soft); line-height: 1.45; text-shadow: var(--text-crisp-shadow); }

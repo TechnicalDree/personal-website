@@ -23,8 +23,35 @@
     ]
   },
   "projects": {
-    "countLabel": "05 ENTRIES",
+    "countLabel": "12 ENTRIES",
     "items": [
+      {
+        "status": "HACKATHON",
+        "title": "MOSAICLEDGER",
+        "description": "TartanHacks team of 3: Plaid + Capital One Nessie finance dashboard with D3 treemap spending viz, subscription detection, hosted MCP tools for AI coaching, XRPL round-up savings, and Vitest fuzz + Playwright E2E CI.",
+        "chips": ["D3.js", "Plaid", "MCP"],
+        "link": "https://mosaic-ledger-web.vercel.app/",
+        "linkLabel": "VIEW DEMO",
+        "link2": "https://youtu.be/5Ug0nv0nYEA?si=DKAIgdDbrqVV8onu",
+        "link2Label": "WATCH VIDEO"
+      },
+      {
+        "status": "LIVE",
+        "title": "DEEP-LIVE-CAM AUTH SYSTEM",
+        "description": "100% deepfake traceability via LSB watermarking (<0.4% pixel change) and RSA-2048/4096 signatures, with automated PKI and Docker multi-stage builds fixing cross-platform deployment across a 5-framework ML stack.",
+        "chips": ["Python", "Docker", "Crypto"],
+        "github": "https://github.com/TechnicalDree/Deep-Live-Cam",
+        "link": "https://www.youtube.com/watch?v=ch_LXkpjnIM",
+        "linkLabel": "WATCH VIDEO"
+      },
+      {
+        "status": "BETA",
+        "title": "TRACKING PIXEL CHROME EXTENSION",
+        "description": "MV3 extension detecting and optionally blocking 1×1 pixels, sendBeacon, and scripted network calls via fetch/XHR/Beacon hooks, heuristic Low/Medium/High risk scoring, and a React UI with Observe/Soft-Block/Strict modes.",
+        "chips": ["React", "JavaScript", "MV3"],
+        "link": "https://www.youtube.com/watch?v=6szwvvma1QQ",
+        "linkLabel": "WATCH VIDEO"
+      },
       {
         "status": "SHIPPED",
         "title": "HTTP PSEUDO-STREAMING SERVER",
@@ -32,28 +59,63 @@
         "chips": ["Python", "Sockets", "HTTP/1.1"]
       },
       {
-        "status": "LIVE",
-        "title": "DEEP-LIVE-CAM AUTH SYSTEM",
-        "description": "AI content authentication system with LSB watermarking, RSA-2048/4096 signatures, PKI automation, and Dockerized deployment across a 5-framework ML stack.",
-        "chips": ["Python", "Docker", "Crypto"]
-      },
-      {
-        "status": "BETA",
-        "title": "monoPix-scout",
-        "description": "Chrome Manifest V3 extension that detects, classifies, and optionally blocks covert tracking pixels, beacon calls, and scripted network requests in real time.",
-        "chips": ["React", "JavaScript", "MV3"]
-      },
-      {
         "status": "ARCHIVED",
         "title": "YACA CHAT APP",
         "description": "Full-stack chat app with authentication, friend lists, REST APIs, responsive UI, websockets, and real-time group chat for 20+ users.",
-        "chips": ["TypeScript", "Node.js", "MongoDB"]
+        "chips": ["TypeScript", "Node.js", "MongoDB"],
+        "github": "https://github.com/TechnicalDree/yaca-chat-app"
       },
       {
         "status": "SYSTEMS",
         "title": "BUFFER POOL MANAGER",
-        "description": "Thread-safe C++ buffer pool manager with LRU-K page replacement, background disk scheduling, promise I/O callbacks, and RAII page guards.",
+        "description": "Thread-safe disk buffer pool with page fetch, eviction, pin-count tracking, LRU-K replacement, background disk scheduler, promise I/O callbacks, and Read/WritePageGuard RAII for concurrency-safe access.",
         "chips": ["C++", "Concurrency", "DB Systems"]
+      },
+      {
+        "status": "ML",
+        "title": "LONG-TAIL US LANDMARK RECOGNITION",
+        "description": "Custom 50-class US landmark dataset comparing ResNet-50 vs ViT-B16 with five loss functions, MixUp, and OOD detection. ViT-B16 + Class-Balanced Loss + MixUp reached 75.72% Top-1 (+10.57pp Tail-F1 vs baseline).",
+        "chips": ["PyTorch", "ViT", "Computer Vision"],
+        "link": "https://pdflink.to/b0319583/",
+        "linkLabel": "VIEW REPORT"
+      },
+      {
+        "status": "CUDA",
+        "title": "GPU-ACCELERATED CANNY EDGE DETECTION",
+        "description": "Real-time Canny pipeline on GPU with fused kernels that cut intermediate global memory round-trips and launch overhead. Owned image frontend, preprocessing, CUDA stream management, and kernel launches.",
+        "chips": ["CUDA", "C++", "GPU"],
+        "link": "https://pdflink.to/dfecbd06/",
+        "linkLabel": "VIEW REPORT"
+      },
+      {
+        "status": "CAPSTONE",
+        "title": "CATOMBOTS",
+        "description": "ECE senior capstone: low-cost semi-autonomous multi-robot swarm for urban disaster survivor search with LiDAR, UWB-IR ranging, IMU fusion, and frontier-based exploration. Owned collaboration logic, exploration, obstacle avoidance, and the 2D operator dashboard.",
+        "chips": ["ROS2", "LiDAR", "Swarm"],
+        "link": "https://pdflink.to/45da3fbb/",
+        "linkLabel": "VIEW REPORT",
+        "link2": "https://drive.google.com/drive/folders/1vk_iSP8yQnM6TVr_UY7SdX2yx6HyxZYR",
+        "link2Label": "VIEW FILES"
+      },
+      {
+        "status": "XR",
+        "title": "SELF-LOCALIZING XR CONTROLLER",
+        "description": "Fuses 6-DoF AprilTag pose with 3-DoF IMU orientation to drive a live ARENA scene; Pi Camera OpenCV checkerboard calibration, tag36h11 detection, and pose (R, t) estimation from images.",
+        "chips": ["OpenCV", "AprilTag", "IMU"],
+        "link": "https://drive.google.com/file/d/1FI5OoAruD29V1vEbpfAatOobCM3ehD1B/view?usp=sharing",
+        "linkLabel": "VIEW REPORT"
+      },
+      {
+        "status": "ROBOTICS",
+        "title": "AUTONOMOUS ROBOT NAVIGATION",
+        "description": "LIDAR + odometry occupancy grids for >90% arena navigation accuracy; learning-based object detection, A*/RRT* motion planning, and behavior trees for task-level execution.",
+        "chips": ["ROS", "LiDAR", "Planning"]
+      },
+      {
+        "status": "EMBEDDED",
+        "title": "EMBEDDED ROVER",
+        "description": "Custom Fusion 360 PCB with I2C, LCD, UART, and servo drivers for user-mode programs; PID motor control with speed regulation and UART telemetry to a Python visualization script.",
+        "chips": ["Embedded", "PCB", "PID"]
       }
     ]
   },

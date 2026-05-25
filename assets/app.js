@@ -664,12 +664,18 @@
     const chips = [...card.querySelectorAll('.prj-chips span')].map((el) => el.textContent.trim());
     const sn = card.getAttribute('data-sn') || '0000';
     const github = card.getAttribute('data-github') || '';
+    const link = card.getAttribute('data-link') || '';
+    const linkLabel = card.getAttribute('data-link-label') || 'VIEW PROJECT';
+    const link2 = card.getAttribute('data-link-2') || '';
+    const link2Label = card.getAttribute('data-link-2-label') || 'OPEN LINK';
 
     projectModal = document.createElement('div');
     projectModal.className = 'prj-modal-backdrop';
-    const repoBtn = github
-      ? `<a href="${escapeHtml(github)}" target="_blank" rel="noreferrer">▶ VIEW REPO</a>`
-      : '';
+    const actionBtns = [
+      github ? `<a href="${escapeHtml(github)}" target="_blank" rel="noreferrer">▶ VIEW REPO</a>` : '',
+      link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noreferrer">▶ ${escapeHtml(linkLabel)}</a>` : '',
+      link2 ? `<a href="${escapeHtml(link2)}" target="_blank" rel="noreferrer">▶ ${escapeHtml(link2Label)}</a>` : '',
+    ].filter(Boolean).join('');
     projectModal.innerHTML = `
       <article class="prj-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
         <div class="prj-modal-hd">
@@ -679,7 +685,7 @@
         <div class="prj-modal-body">
           <p>${escapeHtml(desc)}</p>
           <div class="prj-modal-chips">${chips.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>
-          <div class="prj-modal-actions">${repoBtn}</div>
+          <div class="prj-modal-actions">${actionBtns}</div>
         </div>
         <div class="prj-modal-foot">// serial ${escapeHtml(sn)} · status ${escapeHtml(status)} · click outside to close</div>
       </article>

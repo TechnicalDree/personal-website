@@ -266,42 +266,51 @@
     <div class="view view-projects">
       <div class="row-head">
         <span class="tag tag-cyan">&gt;_ ls ./projects</span>
-        <span class="tag tag-mag">05 ENTRIES</span>
+        <span class="tag tag-mag">12 ENTRIES</span>
       </div>
       <h2 class="h2">PROJECTS // SELECTED_WORKS</h2>
 
       <div class="prj-grid">
+        <article class="prj" tabindex="0" data-link="https://mosaic-ledger-web.vercel.app/" data-link-label="VIEW DEMO" data-link-2="https://youtu.be/5Ug0nv0nYEA?si=DKAIgdDbrqVV8onu" data-link-2-label="WATCH VIDEO">
+          <div class="prj-thumb" data-thumb="mosaic"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[01]</span><span class="tag tag-yel">HACKATHON</span></div>
+            <h3>MOSAICLEDGER</h3>
+            <p>TartanHacks team of 3: Plaid + Capital One Nessie finance dashboard with D3 treemap spending viz, subscription detection, hosted MCP tools for AI coaching, XRPL round-up savings, and Vitest fuzz + Playwright E2E CI.</p>
+            <div class="prj-chips"><span>D3.js</span><span>Plaid</span><span>MCP</span></div>
+          </div>
+        </article>
+        <article class="prj" tabindex="0" data-github="https://github.com/TechnicalDree/Deep-Live-Cam" data-link="https://www.youtube.com/watch?v=ch_LXkpjnIM" data-link-label="WATCH VIDEO">
+          <div class="prj-thumb" data-thumb="auth"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[02]</span><span class="tag tag-yel">LIVE</span></div>
+            <h3>DEEP-LIVE-CAM AUTH SYSTEM</h3>
+            <p>100% deepfake traceability via LSB watermarking (&lt;0.4% pixel change) and RSA-2048/4096 signatures, with automated PKI and Docker multi-stage builds fixing cross-platform deployment across a 5-framework ML stack.</p>
+            <div class="prj-chips"><span>Python</span><span>Docker</span><span>Crypto</span></div>
+          </div>
+        </article>
+        <article class="prj" tabindex="0" data-link="https://www.youtube.com/watch?v=6szwvvma1QQ" data-link-label="WATCH VIDEO">
+          <div class="prj-thumb" data-thumb="privacy"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[03]</span><span class="tag tag-mag">BETA</span></div>
+            <h3>TRACKING PIXEL CHROME EXTENSION</h3>
+            <p>MV3 extension detecting and optionally blocking 1×1 pixels, sendBeacon, and scripted network calls via fetch/XHR/Beacon hooks, heuristic Low/Medium/High risk scoring, and a React UI with Observe/Soft-Block/Strict modes.</p>
+            <div class="prj-chips"><span>React</span><span>JavaScript</span><span>MV3</span></div>
+          </div>
+        </article>
         <article class="prj" tabindex="0">
           <div class="prj-thumb" data-thumb="http"></div>
           <div class="prj-body">
-            <div class="prj-meta"><span>[01]</span><span class="tag tag-cyan">SHIPPED</span></div>
+            <div class="prj-meta"><span>[04]</span><span class="tag tag-cyan">SHIPPED</span></div>
             <h3>HTTP PSEUDO-STREAMING SERVER</h3>
             <p>HTTP/1.1 server built from scratch with low-level Python sockets, full method/status support, byte-range video streaming, and 200+ concurrent clients.</p>
             <div class="prj-chips"><span>Python</span><span>Sockets</span><span>HTTP/1.1</span></div>
           </div>
         </article>
-        <article class="prj" tabindex="0" data-github="https://github.com/TechnicalDree/Deep-Live-Cam">
-          <div class="prj-thumb" data-thumb="auth"></div>
-          <div class="prj-body">
-            <div class="prj-meta"><span>[02]</span><span class="tag tag-yel">LIVE</span></div>
-            <h3>DEEP-LIVE-CAM AUTH SYSTEM</h3>
-            <p>AI content authentication system with LSB watermarking, RSA-2048/4096 signatures, PKI automation, and Dockerized deployment across a 5-framework ML stack.</p>
-            <div class="prj-chips"><span>Python</span><span>Docker</span><span>Crypto</span></div>
-          </div>
-        </article>
-        <article class="prj" tabindex="0">
-          <div class="prj-thumb" data-thumb="privacy"></div>
-          <div class="prj-body">
-            <div class="prj-meta"><span>[03]</span><span class="tag tag-mag">BETA</span></div>
-            <h3>monoPix-scout</h3>
-            <p>Chrome Manifest V3 extension that detects, classifies, and optionally blocks covert tracking pixels, beacon calls, and scripted network requests in real time.</p>
-            <div class="prj-chips"><span>React</span><span>JavaScript</span><span>MV3</span></div>
-          </div>
-        </article>
         <article class="prj" tabindex="0" data-github="https://github.com/TechnicalDree/yaca-chat-app">
           <div class="prj-thumb" data-thumb="chat"></div>
           <div class="prj-body">
-            <div class="prj-meta"><span>[04]</span><span class="tag tag-ghost">ARCHIVED</span></div>
+            <div class="prj-meta"><span>[05]</span><span class="tag tag-ghost">ARCHIVED</span></div>
             <h3>YACA CHAT APP</h3>
             <p>Full-stack chat app with authentication, friend lists, REST APIs, responsive UI, websockets, and real-time group chat for 20+ users.</p>
             <div class="prj-chips"><span>TypeScript</span><span>Node.js</span><span>MongoDB</span></div>
@@ -310,10 +319,64 @@
         <article class="prj" tabindex="0">
           <div class="prj-thumb" data-thumb="database"></div>
           <div class="prj-body">
-            <div class="prj-meta"><span>[05]</span><span class="tag tag-cyan">SYSTEMS</span></div>
+            <div class="prj-meta"><span>[06]</span><span class="tag tag-cyan">SYSTEMS</span></div>
             <h3>BUFFER POOL MANAGER</h3>
-            <p>Thread-safe C++ buffer pool manager with LRU-K page replacement, background disk scheduling, promise I/O callbacks, and RAII page guards.</p>
+            <p>Thread-safe disk buffer pool with page fetch, eviction, pin-count tracking, LRU-K replacement, background disk scheduler, promise I/O callbacks, and Read/WritePageGuard RAII for concurrency-safe access.</p>
             <div class="prj-chips"><span>C++</span><span>Concurrency</span><span>DB Systems</span></div>
+          </div>
+        </article>
+        <article class="prj" tabindex="0" data-link="https://pdflink.to/b0319583/" data-link-label="VIEW REPORT">
+          <div class="prj-thumb" data-thumb="landmarks"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[07]</span><span class="tag tag-yel">ML</span></div>
+            <h3>LONG-TAIL US LANDMARK RECOGNITION</h3>
+            <p>Custom 50-class US landmark dataset comparing ResNet-50 vs ViT-B16 with five loss functions, MixUp, and OOD detection. ViT-B16 + Class-Balanced Loss + MixUp reached 75.72% Top-1 (+10.57pp Tail-F1 vs baseline).</p>
+            <div class="prj-chips"><span>PyTorch</span><span>ViT</span><span>Computer Vision</span></div>
+          </div>
+        </article>
+        <article class="prj" tabindex="0" data-link="https://pdflink.to/dfecbd06/" data-link-label="VIEW REPORT">
+          <div class="prj-thumb" data-thumb="canny"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[08]</span><span class="tag tag-cyan">CUDA</span></div>
+            <h3>GPU-ACCELERATED CANNY EDGE DETECTION</h3>
+            <p>Real-time Canny pipeline on GPU with fused kernels that cut intermediate global memory round-trips and launch overhead. Owned image frontend, preprocessing, CUDA stream management, and kernel launches.</p>
+            <div class="prj-chips"><span>CUDA</span><span>C++</span><span>GPU</span></div>
+          </div>
+        </article>
+        <article class="prj" tabindex="0" data-link="https://pdflink.to/45da3fbb/" data-link-label="VIEW REPORT" data-link-2="https://drive.google.com/drive/folders/1vk_iSP8yQnM6TVr_UY7SdX2yx6HyxZYR" data-link-2-label="VIEW FILES">
+          <div class="prj-thumb" data-thumb="swarm"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[09]</span><span class="tag tag-mag">CAPSTONE</span></div>
+            <h3>CATOMBOTS</h3>
+            <p>ECE senior capstone: low-cost semi-autonomous multi-robot swarm for urban disaster survivor search with LiDAR, UWB-IR ranging, IMU fusion, and frontier-based exploration. Owned collaboration logic, exploration, obstacle avoidance, and the 2D operator dashboard.</p>
+            <div class="prj-chips"><span>ROS2</span><span>LiDAR</span><span>Swarm</span></div>
+          </div>
+        </article>
+        <article class="prj" tabindex="0" data-link="https://drive.google.com/file/d/1FI5OoAruD29V1vEbpfAatOobCM3ehD1B/view?usp=sharing" data-link-label="VIEW REPORT">
+          <div class="prj-thumb" data-thumb="xr"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[10]</span><span class="tag tag-cyan">XR</span></div>
+            <h3>SELF-LOCALIZING XR CONTROLLER</h3>
+            <p>Fuses 6-DoF AprilTag pose with 3-DoF IMU orientation to drive a live ARENA scene; Pi Camera OpenCV checkerboard calibration, tag36h11 detection, and pose (R, t) estimation from images.</p>
+            <div class="prj-chips"><span>OpenCV</span><span>AprilTag</span><span>IMU</span></div>
+          </div>
+        </article>
+        <article class="prj" tabindex="0">
+          <div class="prj-thumb" data-thumb="robot-nav"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[11]</span><span class="tag tag-mag">ROBOTICS</span></div>
+            <h3>AUTONOMOUS ROBOT NAVIGATION</h3>
+            <p>LIDAR + odometry occupancy grids for &gt;90% arena navigation accuracy; learning-based object detection, A*/RRT* motion planning, and behavior trees for task-level execution.</p>
+            <div class="prj-chips"><span>ROS</span><span>LiDAR</span><span>Planning</span></div>
+          </div>
+        </article>
+        <article class="prj" tabindex="0">
+          <div class="prj-thumb" data-thumb="rover"></div>
+          <div class="prj-body">
+            <div class="prj-meta"><span>[12]</span><span class="tag tag-yel">EMBEDDED</span></div>
+            <h3>EMBEDDED ROVER</h3>
+            <p>Custom Fusion 360 PCB with I2C, LCD, UART, and servo drivers for user-mode programs; PID motor control with speed regulation and UART telemetry to a Python visualization script.</p>
+            <div class="prj-chips"><span>Embedded</span><span>PCB</span><span>PID</span></div>
           </div>
         </article>
       </div>
