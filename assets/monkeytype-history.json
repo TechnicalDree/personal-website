@@ -1,13 +1,13 @@
 {
   "user": "a3rean",
-  "generatedAt": "2026-05-11T10:37:33.693428+00:00",
+  "generatedAt": "2026-05-25T11:09:21.762764+00:00",
   "profile": {
     "name": "a3rean",
     "addedAt": 1643789634823,
     "typingStats": {
-      "completedTests": 3172,
-      "startedTests": 8236,
-      "timeTyping": 72546.36000000022
+      "completedTests": 3177,
+      "startedTests": 8246,
+      "timeTyping": 72720.92000000022
     },
     "personalBests": {
       "time": {
@@ -136,8 +136,8 @@
         "100": []
       }
     },
-    "xp": 692877,
-    "streak": 5,
+    "xp": 698178,
+    "streak": 1,
     "maxStreak": 29,
     "isPremium": false,
     "details": {
@@ -153,14 +153,14 @@
       "time": {
         "15": {
           "english": {
-            "rank": 85363,
-            "count": 499673
+            "rank": 86010,
+            "count": 502697
           }
         },
         "60": {
           "english": {
-            "rank": 56004,
-            "count": 491227
+            "rank": 56439,
+            "count": 494270
           }
         }
       }
@@ -168,90 +168,6 @@
     "uid": "5BkkUGvDP0erNVChpn1Q6YUFWNz1",
     "testActivity": {
       "days": [
-        {
-          "date": "2025-05-06",
-          "count": 0,
-          "level": 0,
-          "row": 3
-        },
-        {
-          "date": "2025-05-07",
-          "count": 0,
-          "level": 0,
-          "row": 4
-        },
-        {
-          "date": "2025-05-08",
-          "count": 1,
-          "level": 1,
-          "row": 5
-        },
-        {
-          "date": "2025-05-09",
-          "count": 11,
-          "level": 4,
-          "row": 6
-        },
-        {
-          "date": "2025-05-10",
-          "count": 1,
-          "level": 1,
-          "row": 7
-        },
-        {
-          "date": "2025-05-11",
-          "count": 0,
-          "level": 0,
-          "row": 1
-        },
-        {
-          "date": "2025-05-12",
-          "count": 1,
-          "level": 1,
-          "row": 2
-        },
-        {
-          "date": "2025-05-13",
-          "count": 9,
-          "level": 4,
-          "row": 3
-        },
-        {
-          "date": "2025-05-14",
-          "count": 3,
-          "level": 2,
-          "row": 4
-        },
-        {
-          "date": "2025-05-15",
-          "count": 12,
-          "level": 4,
-          "row": 5
-        },
-        {
-          "date": "2025-05-16",
-          "count": 7,
-          "level": 4,
-          "row": 6
-        },
-        {
-          "date": "2025-05-17",
-          "count": 0,
-          "level": 0,
-          "row": 7
-        },
-        {
-          "date": "2025-05-18",
-          "count": 0,
-          "level": 0,
-          "row": 1
-        },
-        {
-          "date": "2025-05-19",
-          "count": 3,
-          "level": 2,
-          "row": 2
-        },
         {
           "date": "2025-05-20",
           "count": 6,
@@ -2390,26 +2306,96 @@
         },
         {
           "date": "2026-05-11",
+          "count": 1,
+          "level": 1,
+          "row": 2
+        },
+        {
+          "date": "2026-05-12",
+          "count": 0,
+          "level": 0,
+          "row": 3
+        },
+        {
+          "date": "2026-05-13",
+          "count": 1,
+          "level": 1,
+          "row": 4
+        },
+        {
+          "date": "2026-05-14",
+          "count": 1,
+          "level": 1,
+          "row": 5
+        },
+        {
+          "date": "2026-05-15",
+          "count": 0,
+          "level": 0,
+          "row": 6
+        },
+        {
+          "date": "2026-05-16",
+          "count": 0,
+          "level": 0,
+          "row": 7
+        },
+        {
+          "date": "2026-05-17",
+          "count": 0,
+          "level": 0,
+          "row": 1
+        },
+        {
+          "date": "2026-05-18",
+          "count": 1,
+          "level": 1,
+          "row": 2
+        },
+        {
+          "date": "2026-05-19",
+          "count": 0,
+          "level": 0,
+          "row": 3
+        },
+        {
+          "date": "2026-05-20",
+          "count": 1,
+          "level": 1,
+          "row": 4
+        },
+        {
+          "date": "2026-05-21",
+          "count": 0,
+          "level": 0,
+          "row": 5
+        },
+        {
+          "date": "2026-05-22",
+          "count": 0,
+          "level": 0,
+          "row": 6
+        },
+        {
+          "date": "2026-05-23",
+          "count": 0,
+          "level": 0,
+          "row": 7
+        },
+        {
+          "date": "2026-05-24",
+          "count": 0,
+          "level": 0,
+          "row": 1
+        },
+        {
+          "date": "2026-05-25",
           "count": 0,
           "level": 0,
           "row": 2
         }
       ],
       "testsByDays": [
-        0,
-        0,
-        1,
-        11,
-        1,
-        0,
-        1,
-        9,
-        3,
-        12,
-        7,
-        0,
-        0,
-        3,
         6,
         8,
         5,
@@ -2766,9 +2752,23 @@
         1,
         0,
         0,
+        1,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
         0
       ],
-      "total": 509
+      "total": 466
     }
   }
 }
