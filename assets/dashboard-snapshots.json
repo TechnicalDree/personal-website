@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-06-05T10:45:13.066480+00:00",
+  "generatedAt": "2026-06-06T09:24:12.489855+00:00",
   "cursor": {
     "source": "snapshot",
-    "updatedAt": "2026-06-05T10:45:13.066480+00:00",
+    "updatedAt": "2026-06-06T09:24:12.489855+00:00",
     "dashboardUrl": "https://cursor.com/dashboard",
     "totalLineEdits": 56963,
     "mostActiveMonth": "April",
@@ -418,7 +418,7 @@
   },
   "wispr": {
     "source": "snapshot",
-    "updatedAt": "2026-06-05T10:45:13.066480+00:00",
+    "updatedAt": "2026-06-06T09:24:12.489855+00:00",
     "dashboardUrl": "https://admin.wisprflow.ai/",
     "account": "adrianm2003az@gmail.com",
     "currentStreak": "8 day streak",
