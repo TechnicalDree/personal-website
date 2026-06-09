@@ -6,10 +6,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/styles.css?v=20260606a">
 </head>
 <body>
   <div id="bg-parallax" class="bg-parallax" aria-hidden="true">
+    <canvas id="bg-sky"></canvas>
+    <canvas id="bg-city3d"></canvas>
     <canvas id="bg"></canvas>
     <canvas id="bg-fx"></canvas>
   </div>
@@ -28,6 +30,24 @@
     <label for="city-speed">CITY.SPEED</label>
     <input id="city-speed" type="range" min="0" max="2.5" step="0.1" value="1">
     <span id="city-speed-value">1.0x</span>
+  </div>
+  <div class="weather-controls" aria-label="Skyline weather controls">
+    <span class="weather-title">WEATHER</span>
+    <button type="button" data-weather="auto" class="active">AUTO</button>
+    <button type="button" data-weather="clear">CLEAR</button>
+    <button type="button" data-weather="rain">RAIN</button>
+    <button type="button" data-weather="snow">SNOW</button>
+    <button type="button" data-weather="wind">WIND</button>
+    <label for="weather-intensity">INTENSITY</label>
+    <input id="weather-intensity" type="range" min="0" max="100" value="80">
+  </div>
+  <div class="sound-controls" aria-label="Soundscape controls">
+    <button id="sound-btn" type="button" aria-pressed="false">
+      <span>SOUND</span>
+      <b id="sound-label">OFF</b>
+    </button>
+    <label for="sound-volume">VOL</label>
+    <input id="sound-volume" type="range" min="0" max="100" value="22">
   </div>
   <div class="env-hud" id="env-hud" aria-label="Local sky and weather">
     <span class="env-phase" id="env-phase">--</span>
@@ -86,7 +106,7 @@
             <span class="num">[03]</span><span class="lbl">EXPERIENCE </span><span class="dot"></span>
           </button>
           <button class="nav-item" data-view="gallery">
-            <span class="num">[04]</span><span class="lbl">SKILLS</span><span class="dot"></span>
+            <span class="num">[04]</span><span class="lbl">PHOTOS</span><span class="dot"></span>
           </button>
           <button class="nav-item" data-view="contact">
             <span class="num">[05]</span><span class="lbl">CONTACT</span><span class="dot"></span>
@@ -510,22 +530,23 @@
   <template id="tpl-gallery">
     <div class="view view-gallery">
       <div class="row-head">
-        <span class="tag tag-cyan">&gt;_ cat ./skills.json</span>
-        <span class="tag tag-mag">SKILL MATRIX</span>
+        <span class="tag tag-cyan">&gt;_ open ./photos</span>
+        <span class="tag tag-mag">PHOTO ROLL</span>
       </div>
-      <h2 class="h2">SKILLS // TOOLCHAIN</h2>
-      <div class="gal">
-        <div class="frame" data-pat="python"></div>
-        <div class="frame" data-pat="react"></div>
-        <div class="frame" data-pat="java"></div>
-        <div class="frame" data-pat="aws"></div>
-        <div class="frame" data-pat="ros2"></div>
-        <div class="frame" data-pat="docker"></div>
-        <div class="frame" data-pat="security"></div>
-        <div class="frame" data-pat="network"></div>
-        <div class="frame" data-pat="database"></div>
+      <h2 class="h2">PHOTOS // ARCHIVE</h2>
+      <div class="photo-grid">
+        <button class="photo-card" type="button" data-src="assets/photos/photo-01.jpg" data-caption="PHOTO 01"><img src="assets/photos/photo-01.jpg" alt="Personal website photo 01" loading="lazy" decoding="async"><span>PHOTO 01</span></button>
+        <button class="photo-card" type="button" data-src="assets/photos/photo-02.jpg" data-caption="PHOTO 02"><img src="assets/photos/photo-02.jpg" alt="Personal website photo 02" loading="lazy" decoding="async"><span>PHOTO 02</span></button>
+        <button class="photo-card" type="button" data-src="assets/photos/photo-03.jpg" data-caption="PHOTO 03"><img src="assets/photos/photo-03.jpg" alt="Personal website photo 03" loading="lazy" decoding="async"><span>PHOTO 03</span></button>
+        <button class="photo-card" type="button" data-src="assets/photos/photo-04.jpg" data-caption="PHOTO 04"><img src="assets/photos/photo-04.jpg" alt="Personal website photo 04" loading="lazy" decoding="async"><span>PHOTO 04</span></button>
+        <button class="photo-card" type="button" data-src="assets/photos/photo-05.jpg" data-caption="PHOTO 05"><img src="assets/photos/photo-05.jpg" alt="Personal website photo 05" loading="lazy" decoding="async"><span>PHOTO 05</span></button>
+        <button class="photo-card" type="button" data-src="assets/photos/photo-06.jpg" data-caption="PHOTO 06"><img src="assets/photos/photo-06.jpg" alt="Personal website photo 06" loading="lazy" decoding="async"><span>PHOTO 06</span></button>
+        <button class="photo-card" type="button" data-src="assets/photos/photo-07.jpg" data-caption="PHOTO 07"><img src="assets/photos/photo-07.jpg" alt="Personal website photo 07" loading="lazy" decoding="async"><span>PHOTO 07</span></button>
+        <button class="photo-card" type="button" data-src="assets/photos/photo-08.jpg" data-caption="PHOTO 08"><img src="assets/photos/photo-08.jpg" alt="Personal website photo 08" loading="lazy" decoding="async"><span>PHOTO 08</span></button>
+        <button class="photo-card" type="button" data-src="assets/photos/photo-09.jpg" data-caption="PHOTO 09"><img src="assets/photos/photo-09.jpg" alt="Personal website photo 09" loading="lazy" decoding="async"><span>PHOTO 09</span></button>
+        <button class="photo-card" type="button" data-src="assets/photos/photo-10.jpg" data-caption="PHOTO 10"><img src="assets/photos/photo-10.jpg" alt="Personal website photo 10" loading="lazy" decoding="async"><span>PHOTO 10</span></button>
       </div>
-      <p class="caption">// frameworks: React, Spring, REST APIs, NumPy, PyTorch, ROS2, Node.js, Express, AWS, Django, TensorFlow, Flask.</p>
+      <p class="caption">// personal photo archive loaded from committed browser-safe images.</p>
     </div>
   </template>
 
@@ -563,9 +584,10 @@
 <script src="assets/monkeytype-history.js"></script>
 <script src="assets/dashboard-snapshots.js"></script>
 <script src="assets/phosphor-theme.js"></script>
-<script src="assets/city-environment.js"></script>
-<script src="assets/bg.js"></script>
-<script src="assets/content-admin.js"></script>
-<script src="assets/app.js"></script>
+<script src="assets/city-environment.js?v=20260606b"></script>
+<script type="module" src="assets/city-3d.js?v=20260606c"></script>
+<script src="assets/bg.js?v=20260606a"></script>
+<script src="assets/content-admin.js?v=20260525b"></script>
+<script src="assets/app.js?v=20260525b"></script>
 </body>
 </html>

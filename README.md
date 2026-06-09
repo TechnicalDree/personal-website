@@ -16,11 +16,13 @@ Then visit <http://localhost:8000>.
 ## Layout
 
 - `index.html` — markup, view templates (home / projects / about / experience /
-  gallery / contact).
+  photos / contact).
 - `assets/styles.css` — full visual system: CRT scanlines, neon glow, pixel
   fonts, panels, timeline, gallery, etc.
 - `assets/bg.js` — animated pixel-city canvas (sky gradient, parallax buildings,
-  flying cars, drones, walking pedestrians, shooting stars).
+  bridges, mountains, flying cars, drones, pedestrians, bots, creatures, dialogue,
+  and shooting stars).
+- `assets/photos/` — browser-safe JPEG photo copies used by the Photos view.
 - `assets/app.js` — view switching, typewriter prompt, uptime/clock, GitHub
   heatmap and Monkeytype chart, HIDE / SHOW minimize toggle (also `Esc` /
   `B`).
@@ -53,6 +55,10 @@ Then visit <http://localhost:8000>.
 - Click the left-side `[NN] LABEL` nav entries to switch terminal views.
 - Click `HIDE` (top-right) — or press `Esc` / `B` — to fade the terminal and
   reveal the full city background.
+- Use the weather controls to switch between auto, clear, rain, snow, and wind.
+- Use the sound control or terminal `sound` command to start the synth soundscape.
+- Run `arcade` in the terminal to play the mini-game; run `talk` or click the
+  exposed skyline to interact with city citizens and bots.
 
 ## Edit site content (admin only)
 

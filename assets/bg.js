@@ -3,21 +3,33 @@
 // sub-pixel facade pass for crisper building detail.
 (function () {
   const canvas = document.getElementById('bg');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  const skyCanvas = document.getElementById('bg-sky');
+  if (!canvas || !skyCanvas) return;
+  const foregroundCtx = canvas.getContext('2d');
+  const skyCtx = skyCanvas.getContext('2d');
+  let ctx = foregroundCtx;
   const W = 640, H = 360;
   const DETAIL_SCALE = 2;
   const RENDER_SCALE = 3;
   const CANVAS_SCALE = RENDER_SCALE * DETAIL_SCALE;
   let citySpeed = 1;
   let cityT = 0;
+  let city3DReady = Boolean(window.City3D && window.City3D.ready);
   canvas.width = W * CANVAS_SCALE;
   canvas.height = H * CANVAS_SCALE;
-  ctx.imageSmoothingEnabled = false;
+  skyCanvas.width = W * CANVAS_SCALE;
+  skyCanvas.height = H * CANVAS_SCALE;
+  foregroundCtx.imageSmoothingEnabled = false;
+  skyCtx.imageSmoothingEnabled = false;
 
   function fit() {
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
+    [canvas, skyCanvas].forEach((layerCanvas) => {
+      layerCanvas.style.width = window.innerWidth + 'px';
+      layerCanvas.style.height = window.innerHeight + 'px';
+    });
+    if (window.City3D && typeof window.City3D.resize === 'function') {
+      window.City3D.resize();
+    }
   }
   fit();
   window.addEventListener('resize', fit);
@@ -28,6 +40,12 @@
     citySpeed = Math.max(0, Math.min(2.5, Number(value) || 0));
     if (speedValue) speedValue.textContent = `${citySpeed.toFixed(1)}x`;
     try { localStorage.setItem('citySpeed', String(citySpeed)); } catch (_) {}
+    if (window.City3D && typeof window.City3D.setSpeed === 'function') {
+      window.City3D.setSpeed(citySpeed);
+    }
+    window.dispatchEvent(new CustomEvent('city-speed', {
+      detail: { speed: citySpeed },
+    }));
   }
   if (speedInput) {
     let savedSpeed = null;
@@ -120,6 +138,10 @@
       robots[i].body = remapHex(robots[i].body, map);
       robots[i].glow = remapHex(robots[i].glow, map);
       robots[i].eye = remapHex(robots[i].eye, map);
+    }
+    for (let i = 0; i < creatures.length; i++) {
+      creatures[i].body = remapHex(creatures[i].body, map);
+      creatures[i].glow = remapHex(creatures[i].glow, map);
     }
     for (let i = 0; i < buses.length; i++) {
       buses[i].body = remapHex(buses[i].body, map);
@@ -475,17 +497,20 @@
   layer2.push(
     makeLandmark({ x: 76, baseY: 232, w: 54, h: 86, kind: 'tieredTemple', color: COL.bld2, accent: COL.cyan, sign: 'KAI', signColor: COL.yel, winDensity: 0.28, antennaCount: 3 }),
     makeLandmark({ x: 378, baseY: 232, w: 88, h: 126, kind: 'skyGate', color: COL.bld2, accent: COL.cyan, sign: 'SYN', winDensity: 0.3, antennaCount: 6 }),
+    makeLandmark({ x: 560, baseY: 232, w: 52, h: 104, kind: 'lattice', color: COL.bld2, accent: COL.violet, sign: 'SKY', winDensity: 0.3, antennaCount: 4 }),
   );
   layer3.push(
     makeLandmark({ x: 116, baseY: 270, w: 58, h: 148, kind: 'crownTower', color: COL.bld3, accent: COL.mag, sign: 'BYTE', winDensity: 0.34, antennaCount: 7 }),
     makeLandmark({ x: 252, baseY: 270, w: 66, h: 156, kind: 'holoTower', color: COL.bld3, accent: COL.cyan, sign: 'SYS', signColor: COL.wht, verticalSign: true, winDensity: 0.42, dish: true }),
     makeLandmark({ x: 488, baseY: 270, w: 68, h: 138, kind: 'megaTwin', color: COL.bld3, accent: COL.yel, sign: 'KAI', winDensity: 0.36, antennaCount: 8 }),
+    makeLandmark({ x: 18, baseY: 270, w: 78, h: 116, kind: 'skyGate', color: COL.bld3, accent: COL.blue, sign: 'PORT', winDensity: 0.34, antennaCount: 5 }),
   );
   layer4.push(
     makeLandmark({ x: 38, baseY: 308, w: 52, h: 154, kind: 'steppedNeedle', color: COL.bld4, accent: COL.cyan, sign: 'NEO', verticalSign: true, winDensity: 0.36, antennaCount: 6 }),
     makeLandmark({ x: 192, baseY: 308, w: 62, h: 132, kind: 'podiumSpire', color: COL.bld4, accent: COL.mag, sign: 'VOLT', signColor: COL.yel, winDensity: 0.34, antennaCount: 5 }),
     makeLandmark({ x: 318, baseY: 308, w: 86, h: 168, kind: 'megaTwin', color: COL.bld4, accent: COL.cyan, sign: 'AETHER', winDensity: 0.42, antennaCount: 9 }),
     makeLandmark({ x: 512, baseY: 308, w: 70, h: 146, kind: 'lattice', color: COL.bld4, accent: COL.yel, sign: 'CMU', verticalSign: true, winDensity: 0.32, antennaCount: 6 }),
+    makeLandmark({ x: 420, baseY: 308, w: 54, h: 126, kind: 'tieredTemple', color: COL.bld4, accent: COL.grnLed, sign: 'LAB', winDensity: 0.38, antennaCount: 5 }),
   );
 
   // ---------- VEHICLES (flying cars w/ multiple shapes) ----------
@@ -497,7 +522,7 @@
       { sz: 7, h: 3, palette: [COL.pink, COL.mag] },
       { sz: 3, h: 1, palette: [COL.cyan, COL.blue] },
     ];
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 15; i++) {
       const t = types[(Math.random() * types.length) | 0];
       const dir = Math.random() < 0.5 ? 1 : -1;
       vehicles.push({
@@ -517,11 +542,12 @@
   const airships = [
     { x: -120, y: 75, sp: 0.08, w: 32, h: 7, body: COL.bld5, glow: COL.mag, sign: 'KAI-CORP' },
     { x: W + 80, y: 110, sp: -0.05, w: 28, h: 6, body: COL.bld3, glow: COL.cyan, sign: 'SYS//07' },
+    { x: 210, y: 54, sp: 0.035, w: 44, h: 9, body: COL.bld2, glow: COL.yel, sign: 'CMU-LIFT' },
   ];
 
   // ---------- DRONES / DROIDS ----------
   const droids = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 11; i++) {
     droids.push({
       x: Math.random() * W,
       y: 25 + Math.random() * 140,
@@ -538,9 +564,22 @@
   const SIDEWALK_Y = 305;
   const STREET_BOT = 360;
 
+  const PERSON_LINES = [
+    'nice build',
+    'ship it',
+    'rain again?',
+    'bus in 2',
+    'debug me',
+    'coffee?',
+    'CMU!',
+    'hi adrian',
+    'watch the bot',
+  ];
+  const BOT_LINES = ['route synced', 'beep ok', 'cargo safe', 'patching', 'scan clean'];
+
   // Walking people (animated 4-frame)
   const people = [];
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 32; i++) {
     people.push({
       x: Math.random() * W,
       sp: (Math.random() < 0.5 ? -1 : 1) * (0.06 + Math.random() * 0.12),
@@ -548,6 +587,9 @@
       hatColor: pickPersonColor(),
       bodyColor: pickPersonColor(),
       legColor: '#1a0a35',
+      skinColor: pickSkinColor(),
+      line: pick(PERSON_LINES),
+      talkUntil: Math.random() < 0.22 ? 80 + Math.random() * 180 : 0,
       step: Math.random() * 4,
       tall: Math.random() < 0.4 ? 9 : 8,
     });
@@ -556,10 +598,13 @@
     const opts = [COL.cyan, COL.mag, COL.yel, COL.blue, COL.pink, COL.red, COL.violet, COL.grnLed];
     return opts[(Math.random() * opts.length) | 0];
   }
+  function pickSkinColor() {
+    return pick(['#ffd0a0', '#d79b72', '#a96f4d', '#7d4b34', '#f1b98d', '#c78a5c']);
+  }
 
   // Ground vehicles (cars on the street)
   const groundCars = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 9; i++) {
     groundCars.push({
       x: Math.random() * W,
       sp: (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.7),
@@ -570,7 +615,7 @@
   }
 
   const robots = [];
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 14; i++) {
     const dir = Math.random() < 0.5 ? -1 : 1;
     robots.push({
       x: Math.random() * W,
@@ -580,10 +625,17 @@
       glow: pick([COL.cyan, COL.mag, COL.yel, COL.grnLed, COL.violet]),
       eye: pick([COL.mag, COL.cyan, COL.yel]),
       kind: pick(['tread', 'walker', 'antenna', 'delivery']),
+      line: pick(BOT_LINES),
+      talkUntil: Math.random() < 0.18 ? 90 + Math.random() * 140 : 0,
       bob: Math.random() * Math.PI * 2,
       phase: Math.random() * 80,
     });
   }
+
+  const creatures = [
+    { x: -70, y: 118, sp: 0.18, body: COL.violet, glow: COL.cyan, kind: 'serpent', phase: 0, line: 'skyline guardian', talkUntil: 0 },
+    { x: W + 40, y: 148, sp: -0.14, body: COL.magDk, glow: COL.yel, kind: 'manta', phase: 80, line: 'soft landing', talkUntil: 0 },
+  ];
 
   const buses = [
     { x: -90, y: STREET_Y + 20, sp: 0.28, body: COL.bld5, stripe: COL.yel, route: '88' },
@@ -1251,6 +1303,67 @@
     }
   }
 
+  function drawDistantMountains(t) {
+    const ridges = [
+      { y: 214, color: '#06172b', alpha: 0.72, offset: 0.018, peaks: [[0, 28], [70, -8], [142, 18], [218, -20], [308, 8], [392, -28], [480, 12], [562, -14], [640, 22]] },
+      { y: 232, color: '#08243a', alpha: 0.86, offset: 0.028, peaks: [[0, 16], [54, -18], [136, 10], [224, -26], [318, 22], [430, -16], [544, 12], [640, -20]] },
+    ];
+    ridges.forEach((ridge) => {
+      const shift = (t * ridge.offset) % W;
+      for (let copy = -1; copy <= 1; copy++) {
+        ctx.save();
+        ctx.translate(shift + copy * W, 0);
+        ctx.globalAlpha = ridge.alpha;
+        ctx.fillStyle = ridge.color;
+        ctx.beginPath();
+        ctx.moveTo(0, ridge.y + 60);
+        ridge.peaks.forEach(([x, dy]) => ctx.lineTo(x, ridge.y + dy));
+        ctx.lineTo(W, ridge.y + 60);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 0.34;
+        ctx.fillStyle = COL.cyanDk;
+        for (let i = 1; i < ridge.peaks.length - 1; i += 2) {
+          const [x, dy] = ridge.peaks[i];
+          ctx.fillRect(x - 4, ridge.y + dy + 4, 8, 1);
+          ctx.fillRect(x - 2, ridge.y + dy + 6, 4, 1);
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      }
+    });
+  }
+
+  function drawHarborBridge(t) {
+    const shift = (t * 0.05) % W;
+    for (let copy = -1; copy <= 1; copy++) {
+      ctx.save();
+      ctx.translate(shift + copy * W, 0);
+      const y = 244;
+      ctx.globalAlpha = 0.62;
+      ctx.fillStyle = COL.cyanDk;
+      ctx.fillRect(0, y, W, 2);
+      ctx.fillRect(0, y + 9, W, 1);
+      for (let x = 26; x < W; x += 128) {
+        ctx.fillRect(x, y - 45, 3, 56);
+        ctx.fillRect(x + 42, y - 58, 3, 69);
+        ctx.fillStyle = COL.magDk;
+        ctx.fillRect(x - 8, y - 47, 62, 2);
+        ctx.fillStyle = COL.cyanDk;
+        for (let k = 0; k < 9; k++) {
+          const cx = x + k * 8;
+          const drop = Math.abs(k - 4) * 5;
+          ctx.fillRect(cx, y - 40 + drop, 1, 40 - drop);
+        }
+      }
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = COL.yel;
+      for (let x = 4; x < W; x += 38) ctx.fillRect(x, y + 4, 2, 1);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+  }
+
   // ---------- STREET ----------
   const streetBg = document.createElement('canvas');
   streetBg.width = W; streetBg.height = H - SIDEWALK_Y + 20;
@@ -1302,6 +1415,24 @@
     ctx.textBaseline = 'top';
     ctx.fillStyle = color;
     ctx.fillText(text, x, y);
+  }
+
+  function drawSpeechBubble(x, y, text, color) {
+    const label = String(text || '').slice(0, 14);
+    const w = Math.max(20, label.length * 4 + 7);
+    const bx = Math.max(2, Math.min(W - w - 2, x - (w / 2) | 0));
+    const by = Math.max(18, y - 18);
+    ctx.fillStyle = 'rgba(2, 9, 20, 0.82)';
+    ctx.fillRect(bx, by, w, 11);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.88;
+    ctx.fillRect(bx, by, w, 1);
+    ctx.fillRect(bx, by + 10, w, 1);
+    ctx.fillRect(bx, by, 1, 11);
+    ctx.fillRect(bx + w - 1, by, 1, 11);
+    ctx.fillRect(x | 0, by + 11, 1, 3);
+    ctx.globalAlpha = 1;
+    drawTinyLabel(bx + 4, by + 2, label, COL.wht);
   }
 
   function drawTrafficLight(x, y, t, phase) {
@@ -1445,7 +1576,7 @@
     ctx.fillStyle = p.hatColor;
     ctx.fillRect(px, py, 3, 1);
     // Head
-    ctx.fillStyle = '#ffd0a0';
+    ctx.fillStyle = p.skinColor || '#ffd0a0';
     ctx.fillRect(px, py + 1, 3, 2);
     // Body
     ctx.fillStyle = p.bodyColor;
@@ -1476,6 +1607,9 @@
       ctx.globalAlpha = 0.6;
       ctx.fillRect(px - 1, py + 4, 5, 2);
       ctx.globalAlpha = 1;
+    }
+    if (p.talkUntil > t || ((t + px) % 520 < 96 && px > 18 && px < W - 18)) {
+      drawSpeechBubble(px + 2, py, p.line, p.bodyColor);
     }
   }
 
@@ -1530,6 +1664,43 @@
         ctx.fillRect(rx + 8, ry + 11, 2, 1);
       }
     }
+    if (r.talkUntil > t || ((t + rx + r.phase) % 760 < 80 && rx > 16 && rx < W - 26)) {
+      drawSpeechBubble(rx + 6, ry, r.line, r.glow);
+    }
+  }
+
+  function drawCreature(c, t) {
+    c.x += c.sp * citySpeed;
+    if (c.sp > 0 && c.x > W + 90) c.x = -90;
+    if (c.sp < 0 && c.x < -90) c.x = W + 90;
+    const x = c.x | 0;
+    const y = (c.y + Math.sin(t * 0.025 + c.phase) * 5) | 0;
+    ctx.save();
+    ctx.globalAlpha = 0.76;
+    ctx.fillStyle = c.glow;
+    if (c.kind === 'serpent') {
+      for (let i = 0; i < 12; i++) {
+        const px = x + i * 6;
+        const py = y + Math.sin(t * 0.09 + i * 0.7 + c.phase) * 5;
+        ctx.fillStyle = i % 2 ? c.body : c.glow;
+        ctx.fillRect(px, py | 0, 5, 3);
+      }
+      ctx.fillStyle = COL.yel;
+      ctx.fillRect(x + 70, y - 1, 2, 2);
+    } else {
+      ctx.fillStyle = c.body;
+      ctx.fillRect(x + 6, y, 26, 5);
+      ctx.fillRect(x, y + 3, 38, 2);
+      ctx.fillStyle = c.glow;
+      ctx.fillRect(x + 10, y - 3, 10, 2);
+      ctx.fillRect(x + 18, y + 6, 12, 2);
+    }
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = c.glow;
+    ctx.fillRect(x - 6, y - 3, 58, 12);
+    ctx.globalAlpha = 1;
+    if (c.talkUntil > t) drawSpeechBubble(x + 25, y - 2, c.line, c.glow);
+    ctx.restore();
   }
 
   // ---------- GROUND CARS ----------
@@ -1703,6 +1874,7 @@
   function frame() {
     T++;
     cityT += citySpeed;
+    ctx = skyCtx;
     baseTransform();
     const solar = getSolarState();
     starVisForShoots = solar.starVisibility;
@@ -1737,26 +1909,25 @@
 
     maybeShoot();
     drawShoots();
+    drawDistantMountains(cityT);
 
-    // Far airships behind buildings
+    // Keep the original skyline live until the WebGL renderer confirms success.
+    if (!city3DReady) {
+      drawScrollingLayer(layer1, cityT, 0.035);
+      drawScrollingLayer(layer2, cityT, 0.06);
+      drawHarborBridge(cityT);
+      drawScrollingLayer(layer3, cityT, 0.1);
+      drawScrollingLayer(layer4, cityT, 0.16);
+    }
+
+    ctx = foregroundCtx;
+    baseTransform();
+    ctx.clearRect(0, 0, W, H);
     airships.forEach(a => drawAirship(a, T));
-
-    // Buildings (back to front)
-    drawScrollingLayer(layer1, cityT, 0.035);
-    drawScrollingLayer(layer2, cityT, 0.06);
-
-    // Train rides at mid-depth
     drawTrain(T);
-
-    drawScrollingLayer(layer3, cityT, 0.1);
-
-    // Elevated rails, cables, and signage add foreground city density.
     drawElevatedRails(cityT);
-
-    // Flying vehicles (mid)
     vehicles.forEach(v => drawVehicle(v, T));
-
-    drawScrollingLayer(layer4, cityT, 0.16);
+    creatures.forEach(c => drawCreature(c, T));
 
     // Drones
     droids.forEach(d => drawDroid(d, T));
@@ -1811,7 +1982,72 @@
     lastPhosphorTheme = name;
   }
 
-  window.CityBackground = { applyPhosphorTheme };
+  function showCitySpeech(clientX, clientY, line) {
+    const existing = document.querySelector('.city-speech');
+    if (existing) existing.remove();
+    const bubble = document.createElement('div');
+    bubble.className = 'city-speech';
+    bubble.textContent = line;
+    bubble.style.left = `${Math.max(12, Math.min(window.innerWidth - 180, clientX - 68))}px`;
+    bubble.style.top = `${Math.max(12, Math.min(window.innerHeight - 80, clientY - 52))}px`;
+    document.body.appendChild(bubble);
+    setTimeout(() => bubble.remove(), 2600);
+  }
+
+  function clientToCity(clientX, clientY) {
+    const r = canvas.getBoundingClientRect();
+    return {
+      x: ((clientX - r.left) / Math.max(1, r.width)) * W,
+      y: ((clientY - r.top) / Math.max(1, r.height)) * H,
+    };
+  }
+
+  function findNearestActor(pt) {
+    const actors = [
+      ...people.map((p) => ({ actor: p, x: p.x, y: p.y, line: p.line })),
+      ...robots.map((r) => ({ actor: r, x: r.x + 5, y: r.y + 5, line: r.line })),
+      ...creatures.map((c) => ({ actor: c, x: c.x + 24, y: c.y, line: c.line })),
+    ];
+    let best = null;
+    for (let i = 0; i < actors.length; i++) {
+      const a = actors[i];
+      const dx = a.x - pt.x;
+      const dy = a.y - pt.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 42 && (!best || dist < best.dist)) best = { ...a, dist };
+    }
+    return best;
+  }
+
+  function interactAt(clientX, clientY) {
+    const pt = clientToCity(clientX, clientY);
+    const hit = findNearestActor(pt);
+    if (!hit) {
+      const line = 'tap a citizen, bot, or sky creature';
+      showCitySpeech(clientX, clientY, line);
+      return line;
+    }
+    hit.actor.talkUntil = T + 220;
+    showCitySpeech(clientX, clientY, hit.line);
+    return hit.line;
+  }
+
+  function summonDialogue() {
+    const pool = [...people, ...robots, ...creatures];
+    const actor = pick(pool);
+    actor.talkUntil = T + 240;
+    return actor.line || 'hello skyline';
+  }
+
+  canvas.addEventListener('click', (e) => {
+    interactAt(e.clientX, e.clientY);
+  });
+
+  window.CityBackground = { applyPhosphorTheme, interactAt, summonDialogue };
+
+  window.addEventListener('city-3d-ready', (e) => {
+    city3DReady = Boolean(e.detail && e.detail.ready);
+  });
 
   window.addEventListener('phosphor-theme', (e) => {
     if (e.detail && e.detail.theme) {

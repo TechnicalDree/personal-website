@@ -8,126 +8,254 @@
     "statGithub": "@TechnicalDree"
   },
   "home": {
-    "headlineHtml": "I build systems<br>from <span class=\"hl\">silicon</span> to full-stack.",
-    "headlineGlitch": "I build systems from silicon to full-stack.",
-    "ledeHtml": "Carnegie Mellon <span class=\"u-cy\">BS+MS Electrical &amp; Computer Engineering</span> student with a <span class=\"u-mg\">Robotics minor</span>, building production software across React, Spring Boot, AWS, systems programming, networking, AI tooling, and security.",
+    "headlineHtml": "I build resilient software<br>across <span class=\"hl\">systems</span>, product, and AI.",
+    "headlineGlitch": "I build resilient software across systems, product, and AI.",
+    "ledeHtml": "Carnegie Mellon <span class=\"u-cy\">BS+MS Electrical &amp; Computer Engineering</span> student with a <span class=\"u-mg\">Robotics minor</span>, focused on full-stack product engineering, infrastructure, distributed systems, robotics, security, and applied ML.",
     "status": "● GRADUATING MAY 2026",
-    "stack": "Python · C++ · Java · TS · React · AWS",
-    "focus": "Full-stack · Systems · Robotics · Security",
-    "gpa": "3.40 / 4.00",
+    "stack": "Python · C/C++ · Java · TypeScript · React · AWS",
+    "focus": "Full-stack · Infrastructure · Systems · Robotics · Security",
+    "gpa": "3.43 / 4.00",
     "ticker": [
-      "// internship: <b>Atlassian Software Engineer Intern</b>",
-      "// prior: <b>Amazon SDE Intern</b>",
-      "// build: <b>HTTP server · AI authentication · Chrome extension</b>",
-      "// contact: <b>adrianm2003az@gmail.com</b>"
+      "// incoming: <b>Harvey AI Software Engineer Intern</b>",
+      "// recent: <b>Atlassian admin ops UI reduced ~34 hrs/week</b>",
+      "// prior: <b>Amazon SDE intern built S3/DynamoDB/QuickSight metrics</b>",
+      "// build: <b>CUDA vision · AI authentication · networking · robotics</b>"
     ]
   },
   "projects": {
-    "countLabel": "12 ENTRIES",
+    "countLabel": "25 ENTRIES",
     "items": [
       {
+        "date": "Mar 2026 - May 2026",
+        "status": "ML",
+        "title": "LONG-TAIL US LANDMARK RECOGNITION",
+        "description": "Built a 50-class, 18,883-image landmark dataset with CLIP filtering, compared ResNet-50 and ViT-B/16 across five losses, and reached 75.72% Top-1 accuracy with energy-score OOD detection.",
+        "chips": ["PyTorch", "ViT", "CLIP"],
+        "thumb": "landmarks",
+        "link": "https://pdflink.to/b0319583/",
+        "linkLabel": "VIEW REPORT"
+      },
+      {
+        "date": "Mar 2026 - May 2026",
+        "status": "CUDA",
+        "title": "GPU-ACCELERATED CANNY EDGE DETECTION",
+        "description": "Created a CUDA Canny pipeline with fused Gaussian, Sobel, and non-max suppression kernels, fp16 shared-memory optimizations, and tile-based hysteresis that reduced latency from 7.3 ms CPU to 1.8 ms GPU.",
+        "chips": ["CUDA", "OpenCV", "OpenMP"],
+        "thumb": "canny",
+        "link": "https://pdflink.to/dfecbd06/",
+        "linkLabel": "VIEW REPORT"
+      },
+      {
+        "date": "Feb 2026",
         "status": "HACKATHON",
         "title": "MOSAICLEDGER",
-        "description": "TartanHacks team of 3: Plaid + Capital One Nessie finance dashboard with D3 treemap spending viz, subscription detection, hosted MCP tools for AI coaching, XRPL round-up savings, and Vitest fuzz + Playwright E2E CI.",
-        "chips": ["D3.js", "Plaid", "MCP"],
+        "description": "Built a fintech budgeting app in a team of 3 with Plaid, Capital One Nessie, D3 treemaps, subscription detection, hosted MCP tools, XRPL round-up savings, and Vitest/Playwright CI.",
+        "chips": ["React", "D3.js", "MCP"],
+        "thumb": "mosaic",
         "link": "https://mosaic-ledger-web.vercel.app/",
         "linkLabel": "VIEW DEMO",
         "link2": "https://youtu.be/5Ug0nv0nYEA?si=DKAIgdDbrqVV8onu",
         "link2Label": "WATCH VIDEO"
       },
       {
-        "status": "LIVE",
-        "title": "DEEP-LIVE-CAM AUTH SYSTEM",
-        "description": "100% deepfake traceability via LSB watermarking (<0.4% pixel change) and RSA-2048/4096 signatures, with automated PKI and Docker multi-stage builds fixing cross-platform deployment across a 5-framework ML stack.",
-        "chips": ["Python", "Docker", "Crypto"],
-        "github": "https://github.com/TechnicalDree/Deep-Live-Cam",
-        "link": "https://www.youtube.com/watch?v=ch_LXkpjnIM",
-        "linkLabel": "WATCH VIDEO"
-      },
-      {
-        "status": "BETA",
-        "title": "TRACKING PIXEL CHROME EXTENSION",
-        "description": "MV3 extension detecting and optionally blocking 1×1 pixels, sendBeacon, and scripted network calls via fetch/XHR/Beacon hooks, heuristic Low/Medium/High risk scoring, and a React UI with Observe/Soft-Block/Strict modes.",
-        "chips": ["React", "JavaScript", "MV3"],
-        "link": "https://www.youtube.com/watch?v=6szwvvma1QQ",
-        "linkLabel": "WATCH VIDEO"
-      },
-      {
-        "status": "SHIPPED",
-        "title": "HTTP PSEUDO-STREAMING SERVER",
-        "description": "HTTP/1.1 server built from scratch with low-level Python sockets, full method/status support, byte-range video streaming, and 200+ concurrent clients.",
-        "chips": ["Python", "Sockets", "HTTP/1.1"]
-      },
-      {
-        "status": "ARCHIVED",
-        "title": "YACA CHAT APP",
-        "description": "Full-stack chat app with authentication, friend lists, REST APIs, responsive UI, websockets, and real-time group chat for 20+ users.",
-        "chips": ["TypeScript", "Node.js", "MongoDB"],
-        "github": "https://github.com/TechnicalDree/yaca-chat-app"
-      },
-      {
-        "status": "SYSTEMS",
-        "title": "BUFFER POOL MANAGER",
-        "description": "Thread-safe disk buffer pool with page fetch, eviction, pin-count tracking, LRU-K replacement, background disk scheduler, promise I/O callbacks, and Read/WritePageGuard RAII for concurrency-safe access.",
-        "chips": ["C++", "Concurrency", "DB Systems"]
-      },
-      {
-        "status": "ML",
-        "title": "LONG-TAIL US LANDMARK RECOGNITION",
-        "description": "Custom 50-class US landmark dataset comparing ResNet-50 vs ViT-B16 with five loss functions, MixUp, and OOD detection. ViT-B16 + Class-Balanced Loss + MixUp reached 75.72% Top-1 (+10.57pp Tail-F1 vs baseline).",
-        "chips": ["PyTorch", "ViT", "Computer Vision"],
-        "link": "https://pdflink.to/b0319583/",
-        "linkLabel": "VIEW REPORT"
-      },
-      {
-        "status": "CUDA",
-        "title": "GPU-ACCELERATED CANNY EDGE DETECTION",
-        "description": "Real-time Canny pipeline on GPU with fused kernels that cut intermediate global memory round-trips and launch overhead. Owned image frontend, preprocessing, CUDA stream management, and kernel launches.",
-        "chips": ["CUDA", "C++", "GPU"],
-        "link": "https://pdflink.to/dfecbd06/",
-        "linkLabel": "VIEW REPORT"
-      },
-      {
+        "date": "Jan 2026 - May 2026",
         "status": "CAPSTONE",
-        "title": "CATOMBOTS",
-        "description": "ECE senior capstone: low-cost semi-autonomous multi-robot swarm for urban disaster survivor search with LiDAR, UWB-IR ranging, IMU fusion, and frontier-based exploration. Owned collaboration logic, exploration, obstacle avoidance, and the 2D operator dashboard.",
-        "chips": ["ROS2", "LiDAR", "Swarm"],
+        "title": "CATOMBOTS SEARCH & RESCUE SWARM",
+        "description": "Architected software for a low-cost UGV swarm using ROS pub/sub over Wi-Fi mesh, LiDAR obstacle avoidance, UWB-IR ranging, IMU fusion, frontier exploration, and a live 10 FPS operator map.",
+        "chips": ["ROS", "LiDAR", "UWB"],
+        "thumb": "swarm",
         "link": "https://pdflink.to/45da3fbb/",
         "linkLabel": "VIEW REPORT",
         "link2": "https://drive.google.com/drive/folders/1vk_iSP8yQnM6TVr_UY7SdX2yx6HyxZYR",
         "link2Label": "VIEW FILES"
       },
       {
+        "date": "Jan 2026 - May 2026",
+        "status": "ML OPS",
+        "title": "PRODUCTION MOVIE RECOMMENDATION ENGINE",
+        "description": "Developed a personalized recommendation API for a 1M-user, 20K-title simulated streaming platform with Kafka activity logs, top-20 rankings under 600 ms, CI checks, drift validation, and offline/online metrics.",
+        "chips": ["Python", "Kafka", "Flask"],
+        "thumb": "database"
+      },
+      {
+        "date": "Nov 2025 - Dec 2025",
+        "status": "NETWORKING",
+        "title": "HTTP PSEUDO-STREAMING SERVER",
+        "description": "Implemented an HTTP/1.1 server from scratch with low-level Python sockets, full method/status support, byte-range video streaming for 5 MB+ media, keep-alive concurrency, and 200+ simultaneous clients.",
+        "chips": ["Python", "Sockets", "HTTP/1.1"],
+        "thumb": "http"
+      },
+      {
+        "date": "Oct 2025 - Dec 2025",
+        "status": "SECURITY",
+        "title": "DEEP-LIVE-CAM AI CONTENT AUTH",
+        "description": "Added forensic traceability to deepfake media using invisible LSB watermarking, RSA-2048/4096 signatures, encrypted key handling, verification tools, and Dockerized cross-platform ML deployment.",
+        "chips": ["Python", "Docker", "Crypto"],
+        "thumb": "auth",
+        "github": "https://github.com/TechnicalDree/Deep-Live-Cam",
+        "link": "https://www.youtube.com/watch?v=ch_LXkpjnIM",
+        "linkLabel": "WATCH VIDEO"
+      },
+      {
+        "date": "Oct 2025 - Dec 2025",
+        "status": "PRIVACY",
+        "title": "MONOPIX-SCOUT TRACKING PIXEL EXTENSION",
+        "description": "Built a Chrome MV3 extension that detects and optionally blocks 1x1 pixels, sendBeacon, fetch/XHR hooks, and scripted calls with live alerts, event logs, severity badges, and Observe/Soft-Block/Strict modes.",
+        "chips": ["React", "JavaScript", "MV3"],
+        "thumb": "privacy",
+        "link": "https://www.youtube.com/watch?v=6szwvvma1QQ",
+        "linkLabel": "WATCH VIDEO"
+      },
+      {
+        "date": "Oct 2025 - Dec 2025",
+        "status": "XR",
+        "title": "CHRONOSCOPE XR REALITY RESKINNING",
+        "description": "Designed a Meta Quest mixed-reality system that reskins a physical environment through draggable portals using Unity, Shader Graph, Blender, Polycam capture, generated textures, and Meshy 2D-to-3D assets.",
+        "chips": ["Unity", "Shader Graph", "AR/VR"],
+        "thumb": "xr"
+      },
+      {
+        "date": "Oct 2025 - Nov 2025",
         "status": "XR",
         "title": "SELF-LOCALIZING XR CONTROLLER",
-        "description": "Fuses 6-DoF AprilTag pose with 3-DoF IMU orientation to drive a live ARENA scene; Pi Camera OpenCV checkerboard calibration, tag36h11 detection, and pose (R, t) estimation from images.",
+        "description": "Fused 6-DoF AprilTag pose with 3-DoF IMU orientation, calibrated a Pi Camera with OpenCV, streamed quaternions at ~40 Hz, and re-localized tags for a live ARENA scene.",
         "chips": ["OpenCV", "AprilTag", "IMU"],
+        "thumb": "xr",
         "link": "https://drive.google.com/file/d/1FI5OoAruD29V1vEbpfAatOobCM3ehD1B/view?usp=sharing",
         "linkLabel": "VIEW REPORT"
       },
       {
-        "status": "ROBOTICS",
-        "title": "AUTONOMOUS ROBOT NAVIGATION",
-        "description": "LIDAR + odometry occupancy grids for >90% arena navigation accuracy; learning-based object detection, A*/RRT* motion planning, and behavior trees for task-level execution.",
-        "chips": ["ROS", "LiDAR", "Planning"]
+        "date": "Nov 2025",
+        "status": "NETWORKING",
+        "title": "UDP-BASED RELIABLE TRANSPORT",
+        "description": "Built a UDP file-transfer protocol with a packet format, TCP-like state machine, 5+ concurrent sessions on one port, and recovery under simulated 5% packet loss.",
+        "chips": ["Python", "UDP", "State Machine"],
+        "thumb": "network"
       },
       {
+        "date": "Oct 2025",
+        "status": "DISTRIBUTED",
+        "title": "CONTENT DISTRIBUTION OVERLAY",
+        "description": "Built a UDP overlay where nodes replicate shared data, detect failures with keepalives, support one-sided neighbor adds, and rebuild global topology with link-state advertisements.",
+        "chips": ["Python", "Dijkstra", "UDP"],
+        "thumb": "network"
+      },
+      {
+        "date": "Sep 2025",
+        "status": "WIRELESS",
+        "title": "SOFTWARE WI-FI RECEIVER",
+        "description": "Implemented deinterleaving, 4-QAM demodulation, hard-decision Viterbi decoding, and a two-stage synchronizer for detection and fine offset recovery.",
+        "chips": ["Python", "NumPy", "CommPy"],
+        "thumb": "network"
+      },
+      {
+        "date": "Jun 2025 - Jul 2025",
+        "status": "FULL-STACK",
+        "title": "YACA CHAT APP",
+        "description": "Created a full-stack chat app with authentication, friend lists, REST APIs, responsive UI, websockets, MongoDB, and real-time group chat for 20+ users.",
+        "chips": ["TypeScript", "Node.js", "MongoDB"],
+        "thumb": "chat",
+        "github": "https://github.com/TechnicalDree/yaca-chat-app"
+      },
+      {
+        "date": "Jan 2025 - Apr 2025",
+        "status": "ROBOTICS",
+        "title": "AUTONOMOUS ROBOT NAVIGATION",
+        "description": "Built LiDAR/odometry occupancy grids with >90% arena navigation accuracy, tuned neural perception, evaluated A*/RRT* planners, and applied behavior trees for task execution.",
+        "chips": ["ROS2", "TensorFlow", "Planning"],
+        "thumb": "robot-nav"
+      },
+      {
+        "date": "Jan 2025 - Feb 2025",
+        "status": "SYSTEMS",
+        "title": "BUFFER POOL MANAGER",
+        "description": "Implemented a thread-safe disk buffer pool with page fetch, eviction, pin counts, LRU-K replacement, a background disk scheduler, promise I/O callbacks, and Read/WritePageGuard RAII.",
+        "chips": ["C++", "Concurrency", "DB Systems"],
+        "thumb": "database"
+      },
+      {
+        "date": "Dec 2024",
+        "status": "RL",
+        "title": "MOUNTAIN-CAR REINFORCEMENT LEARNING",
+        "description": "Implemented approximate Q-learning for Mountain-Car, tested epsilon-greedy exploration strategies, and analyzed MDP value iteration and policy convergence.",
+        "chips": ["Python", "PyTorch", "NumPy"],
+        "thumb": "landmarks"
+      },
+      {
+        "date": "Nov 2024 - Dec 2024",
+        "status": "ROBOTICS",
+        "title": "WHITEBOARD DRAWING FRANKA ROBOT ARM",
+        "description": "Implemented forward and inverse kinematics, Cartesian and joint-space trajectory planning, collision-aware motion, smooth interpolation, and singularity avoidance for a Franka Emika arm.",
+        "chips": ["Python", "NumPy", "Kinematics"],
+        "thumb": "robot-nav"
+      },
+      {
+        "date": "Sep 2024 - Dec 2024",
         "status": "EMBEDDED",
         "title": "EMBEDDED ROVER",
-        "description": "Custom Fusion 360 PCB with I2C, LCD, UART, and servo drivers for user-mode programs; PID motor control with speed regulation and UART telemetry to a Python visualization script.",
-        "chips": ["Embedded", "PCB", "PID"]
+        "description": "Designed a custom Fusion 360 PCB, wrote I2C/LCD/UART/servo drivers, implemented STM32 PID motor control, hardware PWM, RMS scheduling, and UART telemetry to Python visualizations.",
+        "chips": ["C", "Assembly", "STM32"],
+        "thumb": "rover"
+      },
+      {
+        "date": "Oct 2024",
+        "status": "DATA",
+        "title": "BASEBALL DATABASE ANALYSIS",
+        "description": "Queried and analyzed 20K+ Lahman Baseball rows using SQL and dplyr joins, aggregations, filtering, and sorting to surface player, payroll, and historical performance insights.",
+        "chips": ["R", "SQL", "dplyr"],
+        "thumb": "database"
+      },
+      {
+        "date": "Oct 2024",
+        "status": "ML",
+        "title": "LOGISTIC REGRESSION SENTIMENT ANALYSIS",
+        "description": "Built a restaurant-review sentiment analyzer with gradient descent, L2 regularization, text preprocessing, performance visualizations, and hyperparameter tuning.",
+        "chips": ["Python", "ML", "NLP"],
+        "thumb": "landmarks"
+      },
+      {
+        "date": "Sep 2024",
+        "status": "ML",
+        "title": "DECISION TREE IMPLEMENTATION",
+        "description": "Implemented entropy, mutual information, recursive tree construction, prediction/evaluation pipelines, depth sweeps, and decision-boundary visualizations for binary classification.",
+        "chips": ["Python", "NumPy", "ML"],
+        "thumb": "landmarks"
+      },
+      {
+        "date": "Jul 2024",
+        "status": "SYSTEMS",
+        "title": "SHELL LAB",
+        "description": "Built a Linux shell that parses and executes command lines, handles options with getopt, and manages foreground/background jobs, stopped tasks, continuing, and termination.",
+        "chips": ["C", "Linux", "Processes"],
+        "thumb": "http"
+      },
+      {
+        "date": "Jul 2024",
+        "status": "SYSTEMS",
+        "title": "WEB-CACHING PROXY",
+        "description": "Implemented a concurrent C caching web proxy compatible with Mozilla Firefox, using mutual exclusion and semaphores to coordinate client requests.",
+        "chips": ["C", "Proxy", "Concurrency"],
+        "thumb": "network"
+      },
+      {
+        "date": "Jun 2024",
+        "status": "SYSTEMS",
+        "title": "CACHE LAB + MEMORY ALLOCATOR",
+        "description": "Built an LRU cache simulator for Valgrind traces, ranked #2 of 126 on optimized matrix transpose, and implemented a custom malloc/free/calloc allocator with segregated free lists and mini blocks.",
+        "chips": ["C", "Linux", "Memory"],
+        "thumb": "database"
       }
     ]
   },
   "about": {
-    "ledeHtml": "I'm Adrian Muñoz, a Carnegie Mellon electrical and computer engineer who likes building across the stack: <span class=\"u-cy\">backend services</span>, <span class=\"u-mg\">interfaces</span>, infrastructure, embedded/systems code, and robotics-adjacent software.",
-    "bodyHtml": "My recent work includes shipping a production admin UI at <b>Atlassian</b>, building AWS data-processing infrastructure at <b>Amazon</b>, evaluating AI coding models at Outlier, and building projects that span networking, cryptography, browser privacy, chat systems, and database internals.",
-    "quote": "I like software that turns messy operational work into reliable systems people can actually use.",
+    "ledeHtml": "I'm Adrian Muñoz, a CMU electrical and computer engineer who likes turning ambiguous technical problems into reliable software people can actually use.",
+    "bodyHtml": "My recent work spans enterprise email and notification infrastructure at <b>Harvey AI</b>, production admin tooling at <b>Atlassian</b>, AWS data-processing infrastructure at <b>Amazon</b>, AI model evaluation at <b>Outlier</b>, and projects across CUDA, networking, browser privacy, cryptography, robotics, XR, and ML systems.",
+    "quote": "I like software that connects low-level engineering discipline with polished product behavior.",
     "signals": [
-      "BS+MS in Electrical & Computer Engineering, Robotics minor.",
-      "Production experience with React, Spring Boot, PostgreSQL, AWS, and Java services.",
-      "Comfortable moving from low-level systems to polished product UI.",
-      "Interested in full-stack systems, robotics, infrastructure, ML tooling, and security."
+      "BS+MS in Electrical & Computer Engineering at Carnegie Mellon, minor in Robotics.",
+      "Relevant coursework: Computer Systems, Embedded Systems, XR Systems, Full-Stack Development, Computer Networks, Machine Learning, Data Structures & Algorithms, Intelligent Robot Systems, Browser Security, Statistical Computing, and Matrices.",
+      "Production experience with React, Spring Boot, REST APIs, PostgreSQL, AWS Lambda, DynamoDB, S3, QuickSight, Java services, and validation-heavy admin UX.",
+      "Developer toolkit: Codex, Cursor, Claude Code, IntelliJ, Git, Jira, Docker, MongoDB, GitHub Actions, Postman, CMake, GDB, and Linux."
     ],
     "specClass": "SOFTWARE ENG",
     "specSchool": "CMU",
@@ -145,48 +273,65 @@
   "experience": {
     "items": [
       {
-        "dates": "2025.05 - 2025.08",
+        "dates": "May 2026 - Jul 2026",
         "tag": "SWE",
-        "bodyHtml": "<b>Atlassian</b> — developed a full-stack admin UI for release-track operations using React, Spring Boot REST APIs, and PostgreSQL; reduced admin workload by ~34 hours/week."
+        "bodyHtml": "<b>Harvey AI</b> - Software Engineer Intern in San Francisco, responsible for email and notifications infrastructure for Enterprise Admin."
       },
       {
-        "dates": "2024.05 - 2024.07",
+        "dates": "May 2025 - Aug 2025",
+        "tag": "SWE",
+        "bodyHtml": "<b>Atlassian</b> - built a full-stack admin UI for product release-track operations with React, Spring Boot REST APIs, and PostgreSQL; reduced admin workload by ~34 hours/week across 17 engineers, improved issue resolution by 50%, and reduced input-related errors by 80%."
+      },
+      {
+        "dates": "May 2024 - Jul 2024",
         "tag": "AI",
-        "bodyHtml": "<b>Outlier</b> — created weekly coding prompts and validation checks, increasing model evaluation coverage by 17% using pandas/NumPy pass-rate measurements."
+        "bodyHtml": "<b>Outlier</b> - created 15 coding prompts weekly and validated model outputs with automated tools plus manual checks, increasing model evaluation coverage by 17% using pandas/NumPy pass-rate measurements."
       },
       {
-        "dates": "2023.05 - 2023.08",
+        "dates": "May 2023 - Aug 2023",
         "tag": "SDE",
-        "bodyHtml": "<b>Amazon</b> — designed a Java service for S3 file metrics and Lambda handlers linking DynamoDB data to QuickSight dashboards for ~11,000 ASIN records."
+        "bodyHtml": "<b>Amazon</b> - designed a Java service for S3 file metrics, built AWS Lambda dispatcher/processor handlers, connected DynamoDB data to QuickSight dashboards, and helped 8 engineers analyze ~11,000 ASIN records."
       },
       {
-        "dates": "2026.05",
+        "dates": "May 2026",
         "tag": "CMU",
-        "bodyHtml": "<b>Carnegie Mellon University</b> — BS+MS in Electrical & Computer Engineering, Minor in Robotics, GPA 3.40/4.00."
+        "bodyHtml": "<b>Carnegie Mellon University</b> - BS+MS in Electrical &amp; Computer Engineering, Minor in Robotics, GPA 3.43/4.00."
       },
       {
-        "dates": "2025 - 2026",
+        "dates": "2024 - 2026",
         "tag": "BUILD",
-        "bodyHtml": "Built projects across HTTP networking, content authentication, browser privacy, real-time chat, and database buffer management."
+        "bodyHtml": "Built project work across CUDA computer vision, HTTP/UDP networking, browser privacy, cryptographic content authentication, XR controllers, ML recommendation systems, robotics swarms, embedded systems, and database internals."
       },
       {
         "dates": "TOOLCHAIN",
         "tag": "STACK",
-        "bodyHtml": "<b>Languages</b>: Python, C, C++, Java, JavaScript, TypeScript, PostgreSQL, R, HTML, CSS, MATLAB."
+        "bodyHtml": "<b>Languages</b>: Python, C, C++, Java, JavaScript, TypeScript, PostgreSQL, R, HTML, CSS, MATLAB. <b>Frameworks</b>: React, Spring, REST APIs, NumPy, PyTorch, ROS2, Node.js, Express.js, AWS, Django, TensorFlow, Flask."
       }
     ]
   },
-  "skills": {
-    "caption": "// frameworks: React, Spring, REST APIs, NumPy, PyTorch, ROS2, Node.js, Express, AWS, Django, TensorFlow, Flask."
+  "photos": {
+    "caption": "// personal photo archive loaded from committed browser-safe images.",
+    "items": [
+      { "src": "assets/photos/photo-01.jpg", "alt": "Personal website photo 01", "caption": "PHOTO 01" },
+      { "src": "assets/photos/photo-02.jpg", "alt": "Personal website photo 02", "caption": "PHOTO 02" },
+      { "src": "assets/photos/photo-03.jpg", "alt": "Personal website photo 03", "caption": "PHOTO 03" },
+      { "src": "assets/photos/photo-04.jpg", "alt": "Personal website photo 04", "caption": "PHOTO 04" },
+      { "src": "assets/photos/photo-05.jpg", "alt": "Personal website photo 05", "caption": "PHOTO 05" },
+      { "src": "assets/photos/photo-06.jpg", "alt": "Personal website photo 06", "caption": "PHOTO 06" },
+      { "src": "assets/photos/photo-07.jpg", "alt": "Personal website photo 07", "caption": "PHOTO 07" },
+      { "src": "assets/photos/photo-08.jpg", "alt": "Personal website photo 08", "caption": "PHOTO 08" },
+      { "src": "assets/photos/photo-09.jpg", "alt": "Personal website photo 09", "caption": "PHOTO 09" },
+      { "src": "assets/photos/photo-10.jpg", "alt": "Personal website photo 10", "caption": "PHOTO 10" }
+    ]
   },
   "contact": {
-    "disclaimer": "// open to software engineering roles spanning full-stack, systems, infrastructure, robotics, and applied AI tooling.",
+    "disclaimer": "// open to software engineering roles spanning full-stack product, infrastructure, systems, robotics, security, and applied AI/ML tooling.",
     "channels": [
       { "icon": "@", "label": "mail", "value": "adrianm2003az@gmail.com", "href": "mailto:adrianm2003az@gmail.com" },
       { "icon": "GH", "label": "github", "value": "/TechnicalDree", "href": "https://github.com/TechnicalDree" },
       { "icon": "in", "label": "linkedin", "value": "/in/adrian---munoz", "href": "https://www.linkedin.com/in/adrian---munoz" },
       { "icon": "CMU", "label": "school", "value": "Carnegie Mellon ECE", "disabled": true },
-      { "icon": "☎", "label": "phone", "value": "480-682-7481", "disabled": true }
+      { "icon": "TEL", "label": "phone", "value": "480-682-7481", "disabled": true }
     ]
   }
 }

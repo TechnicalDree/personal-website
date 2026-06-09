@@ -90,7 +90,7 @@
     projects: { tpl: 'tpl-projects', cmd: 'ls ./projects',        crumb: '~/projects' },
     about:    { tpl: 'tpl-about',    cmd: 'cat ./about.log',      crumb: '~/about' },
     log:      { tpl: 'tpl-log',      cmd: 'tail -f ./changelog',  crumb: '~/log' },
-    gallery:  { tpl: 'tpl-gallery',  cmd: 'cat ./skills.json',    crumb: '~/skills' },
+    gallery:  { tpl: 'tpl-gallery',  cmd: 'open ./photos',        crumb: '~/photos' },
     contact:  { tpl: 'tpl-contact',  cmd: 'open_comms --secure',  crumb: '~/contact' },
   };
 
@@ -99,7 +99,7 @@
     projects: ['projects', 'project', '1', '01', 'ls projects', 'ls ./projects', 'cd projects'],
     about: ['about', '2', '02', 'cat about.log', 'cat ./about.log'],
     log: ['experience', 'exp', 'log', '3', '03', 'tail -f changelog', 'tail -f ./changelog', 'tail -f ./log', 'cat ./changelog'],
-    gallery: ['skills', 'skill', 'gallery', '4', '04', 'cat skills.json', 'cat ./skills.json'],
+    gallery: ['photos', 'photo', 'gallery', '4', '04', 'open photos', 'open ./photos', 'ls photos', 'ls ./photos', 'cat photos.json'],
     contact: ['contact', '5', '05', 'open_comms', 'open_comms --secure', 'mail', 'email'],
   };
   const COMMAND_TO_VIEW = new Map(
@@ -112,7 +112,7 @@
     'projects/',
     'about.log',
     'changelog',
-    'skills.json',
+    'photos/',
     'contact',
   ];
   const VIEW_ORDER = ['home', 'projects', 'about', 'log', 'gallery', 'contact'];
@@ -121,13 +121,14 @@
     'projects | ls ./projects       browse selected work',
     'about | cat ./about.log        read operator file',
     'experience | tail -f ./log     show work history',
-    'skills | cat ./skills.json     show toolchain',
+    'photos | open ./photos         view photo roll',
     'contact | open_comms --secure  open uplink',
     'ls | pwd | clear | help        terminal utilities',
-    'whoami | neofetch | weather     system introspection',
-    'fortune | uptime | ping | stats  misc telemetry',
-    'cowsay <msg> | theme | email    easter eggs',
-    'matrix                          overdrive mode',
+    'weather | rain | snow | wind    control skyline weather',
+    'sound | arcade | talk           music, mini-game, citizens',
+    'whoami | neofetch | fortune     system introspection',
+    'uptime | ping | stats | email   misc telemetry',
+    'cowsay <msg> | theme | matrix   easter eggs',
     'Up/Down                        command history',
     '0-5 / ← →                        jump views',
     '/ | T                          focus cmd / theme',
@@ -168,18 +169,26 @@
     } else {
       typeCmd(meta.cmd);
     }
-    // Wire quick-action buttons inside the view
+    document.dispatchEvent(new CustomEvent('adrian:view-rendered', { detail: { view: viewName } }));
+    rewireInteractiveView();
+    screen.scrollTop = 0;
+    if (options.scrollToTerm && window.matchMedia('(max-width: 900px)').matches) {
+      requestAnimationFrame(() => document.querySelector('.term')?.scrollIntoView({ block: 'start' }));
+    }
+  }
+
+  function rewireInteractiveView() {
     screen.querySelectorAll('[data-nav]').forEach(b => {
-      b.addEventListener('click', () => setView(b.getAttribute('data-nav')));
+      if (b.dataset.wiredNav === '1') return;
+      b.dataset.wiredNav = '1';
+      b.addEventListener('click', () => setView(b.getAttribute('data-nav'), { scrollToTerm: true }));
     });
     wireProjectCards();
-    // serial numbers on project cards
-    screen.querySelectorAll('.prj').forEach((el, i) => {
-      el.setAttribute('data-sn', (0xA000 + i * 37).toString(16).toUpperCase());
-    });
-    screen.scrollTop = 0;
-    document.dispatchEvent(new CustomEvent('adrian:view-rendered', { detail: { view: viewName } }));
+    wirePhotoCards();
+    assignProjectSerials();
   }
+
+  document.addEventListener('adrian:content-applied', rewireInteractiveView);
 
   let typing = null;
   const commandHistory = [];
@@ -346,6 +355,144 @@
     }, 380);
   }
 
+  let audioCtx = null;
+  let masterGain = null;
+  let droneNodes = [];
+  let musicTimer = null;
+  let soundOn = false;
+  let soundVolume = 0.22;
+
+  function ensureAudio() {
+    if (audioCtx) return audioCtx;
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return null;
+    audioCtx = new AudioCtor();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = soundVolume;
+    masterGain.connect(audioCtx.destination);
+    return audioCtx;
+  }
+
+  function playTone(freq, dur = 0.12, type = 'square', gain = 0.08) {
+    const ctx2 = ensureAudio();
+    if (!ctx2 || !masterGain) return;
+    const osc = ctx2.createOscillator();
+    const g = ctx2.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, ctx2.currentTime);
+    g.gain.exponentialRampToValueAtTime(gain, ctx2.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx2.currentTime + dur);
+    osc.connect(g);
+    g.connect(masterGain);
+    osc.start();
+    osc.stop(ctx2.currentTime + dur + 0.03);
+  }
+
+  function startSoundscape() {
+    const ctx2 = ensureAudio();
+    if (!ctx2 || !masterGain) return false;
+    if (ctx2.state === 'suspended') ctx2.resume();
+    stopSoundscape(false);
+    soundOn = true;
+    masterGain.gain.value = soundVolume;
+
+    [55, 82.41].forEach((freq, i) => {
+      const osc = ctx2.createOscillator();
+      const g = ctx2.createGain();
+      osc.type = i === 0 ? 'sawtooth' : 'triangle';
+      osc.frequency.value = freq;
+      g.gain.value = i === 0 ? 0.035 : 0.022;
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start();
+      droneNodes.push({ osc, g });
+    });
+
+    const arp = [220, 277.18, 329.63, 440, 554.37, 440, 329.63, 277.18];
+    let step = 0;
+    musicTimer = setInterval(() => {
+      if (!soundOn) return;
+      playTone(arp[step % arp.length], 0.09, step % 3 === 0 ? 'triangle' : 'square', 0.045);
+      step += 1;
+    }, 380);
+    updateSoundButton();
+    return true;
+  }
+
+  function stopSoundscape(updateButton = true) {
+    if (musicTimer) clearInterval(musicTimer);
+    musicTimer = null;
+    droneNodes.forEach(({ osc }) => {
+      try { osc.stop(); } catch (_) {}
+    });
+    droneNodes = [];
+    soundOn = false;
+    if (updateButton) updateSoundButton();
+  }
+
+  function toggleSoundscape(force) {
+    if (force === true || (!soundOn && force !== false)) return startSoundscape();
+    stopSoundscape();
+    return false;
+  }
+
+  function setSoundscapeVolume(value) {
+    soundVolume = Math.max(0, Math.min(1, Number(value) || 0));
+    if (masterGain) masterGain.gain.value = soundVolume;
+    try { localStorage.setItem('soundVolume', String(soundVolume)); } catch (_) {}
+    updateSoundButton();
+  }
+
+  function updateSoundButton() {
+    const btn = document.getElementById('sound-btn');
+    const label = document.getElementById('sound-label');
+    const volume = document.getElementById('sound-volume');
+    if (btn) {
+      btn.classList.toggle('is-on', soundOn);
+      btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+    }
+    if (label) label.textContent = soundOn ? 'ON' : 'OFF';
+    if (volume && Number(volume.value) !== Math.round(soundVolume * 100)) {
+      volume.value = String(Math.round(soundVolume * 100));
+    }
+  }
+
+  function playUiSound(kind = 'tap') {
+    if (!soundOn) return;
+    const map = {
+      tap: [660, 0.055, 'square', 0.04],
+      weather: [330, 0.12, 'triangle', 0.05],
+      score: [880, 0.08, 'square', 0.05],
+      hit: [110, 0.16, 'sawtooth', 0.08],
+    };
+    playTone(...(map[kind] || map.tap));
+  }
+
+  function setWeatherPreset(mode, intensity) {
+    const env = window.CityEnvironment;
+    if (!env || typeof env.setWeatherMode !== 'function') {
+      return ['// weather controls unavailable'];
+    }
+    const next = env.setWeatherMode(mode, intensity);
+    updateEnvHud();
+    playUiSound('weather');
+    return [
+      `weather mode: ${next.mode}`,
+      `rain: ${Math.round(next.rain * 100)}% · snow: ${Math.round((next.snow || 0) * 100)}% · wind: ${Math.round((next.wind || 0) * 100)}%`,
+    ];
+  }
+
+  function summonCityDialogue() {
+    const bg = window.CityBackground;
+    if (bg && typeof bg.summonDialogue === 'function') {
+      const line = bg.summonDialogue();
+      playUiSound('tap');
+      return [`citizen ping: "${line}"`, '// hide terminal or click the skyline to talk to more citizens'];
+    }
+    return ['// city dialogue unavailable'];
+  }
+
   function executeCommand(rawCommand) {
     const input = rawCommand.trim();
     const normalized = normalizeCommand(input);
@@ -371,7 +518,7 @@
         'adrian munoz (@a3rean)',
         'bs+ms electrical & computer engineering @ cmu',
         'software engineer · full-stack · systems · robotics',
-        'graduated may 2026 · gpa 3.87',
+        'graduating may 2026 · gpa 3.43',
       ]);
     } else if (normalized === 'neofetch') {
       renderTerminalOutput(input, [
@@ -385,6 +532,31 @@
       ]);
     } else if (normalized === 'weather') {
       renderTerminalOutput(input, getWeatherLines());
+    } else if (normalized === 'weather auto' || normalized === 'auto weather') {
+      renderTerminalOutput(input, setWeatherPreset('auto'));
+    } else if (normalized === 'rain' || normalized === 'weather rain') {
+      renderTerminalOutput(input, setWeatherPreset('rain', 0.9));
+    } else if (normalized === 'snow' || normalized === 'weather snow') {
+      renderTerminalOutput(input, setWeatherPreset('snow', 0.82));
+    } else if (normalized === 'wind' || normalized === 'weather wind') {
+      renderTerminalOutput(input, setWeatherPreset('wind', 0.95));
+    } else if (normalized === 'clear sky' || normalized === 'clear weather' || normalized === 'weather clear') {
+      renderTerminalOutput(input, setWeatherPreset('clear', 0));
+    } else if (normalized === 'sound' || normalized === 'music' || normalized === 'sound on' || normalized === 'music on') {
+      const ok = toggleSoundscape(true);
+      renderTerminalOutput(input, ok ? ['soundscape online', '// synth bed + UI tones enabled'] : ['// Web Audio unavailable']);
+    } else if (normalized === 'sound off' || normalized === 'music off') {
+      toggleSoundscape(false);
+      renderTerminalOutput(input, ['soundscape offline']);
+    } else if (normalized.startsWith('volume ')) {
+      const pct = Number(normalized.replace('volume ', ''));
+      setSoundscapeVolume(Number.isFinite(pct) ? pct / 100 : soundVolume);
+      renderTerminalOutput(input, [`volume: ${Math.round(soundVolume * 100)}%`]);
+    } else if (normalized === 'arcade' || normalized === 'minigame' || normalized === 'neon runner') {
+      openArcade();
+      renderTerminalOutput(input, ['arcade cabinet opened', '// arrow keys or A/D to move · collect cyan packets']);
+    } else if (normalized === 'talk' || normalized === 'citizen' || normalized === 'talk city') {
+      renderTerminalOutput(input, summonCityDialogue());
     } else if (normalized === 'fortune' || normalized === 'motd') {
       const quote = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
       renderTerminalOutput(input, [`"${quote}"`, '// adrian-os fortune daemon']);
@@ -490,6 +662,16 @@
       'whoami',
       'neofetch',
       'weather',
+      'weather auto',
+      'weather clear',
+      'rain',
+      'snow',
+      'wind',
+      'sound',
+      'sound off',
+      'volume',
+      'arcade',
+      'talk',
       'fortune',
       'uptime',
       'ping',
@@ -513,7 +695,7 @@
   }
 
   navBtns.forEach(b => {
-    b.addEventListener('click', () => setView(b.dataset.view));
+    b.addEventListener('click', () => setView(b.dataset.view, { scrollToTerm: true }));
   });
 
   cmd.setAttribute('contenteditable', 'true');
@@ -574,6 +756,7 @@
   function setMin(v) {
     minimized = v;
     stage.classList.toggle('minimized', v);
+    document.body.classList.toggle('skyline-mode', v);
     minBtn.classList.toggle('is-min', v);
     minBtn.querySelector('.mb-label').textContent = v ? 'SHOW' : 'HIDE';
     minBtn.title = v ? 'Restore terminal' : 'Hide terminal — show city';
@@ -581,6 +764,7 @@
   minBtn.addEventListener('click', () => setMin(!minimized));
 
   let projectModal = null;
+  let projectModalCleanup = null;
   let bootActive = false;
   const bootScreen = document.getElementById('boot-screen');
   const bootLog = document.getElementById('boot-log');
@@ -650,6 +834,8 @@
 
   // --- Project detail modal ---
   function closeProjectModal() {
+    if (typeof projectModalCleanup === 'function') projectModalCleanup();
+    projectModalCleanup = null;
     if (projectModal) {
       projectModal.remove();
       projectModal = null;
@@ -660,6 +846,7 @@
     closeProjectModal();
     const title = card.querySelector('h3')?.textContent?.trim() || 'PROJECT';
     const desc = card.querySelector('p')?.textContent?.trim() || '';
+    const date = card.querySelector('.prj-meta span:first-child')?.textContent?.trim() || '';
     const status = card.querySelector('.tag')?.textContent?.trim() || '';
     const chips = [...card.querySelectorAll('.prj-chips span')].map((el) => el.textContent.trim());
     const sn = card.getAttribute('data-sn') || '0000';
@@ -683,6 +870,7 @@
           <button type="button" class="prj-modal-close" aria-label="Close">ESC</button>
         </div>
         <div class="prj-modal-body">
+          ${date ? `<div class="prj-modal-date">${escapeHtml(date)}</div>` : ''}
           <p>${escapeHtml(desc)}</p>
           <div class="prj-modal-chips">${chips.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>
           <div class="prj-modal-actions">${actionBtns}</div>
@@ -697,8 +885,197 @@
     document.body.appendChild(projectModal);
   }
 
+  function openPhotoModal(card) {
+    closeProjectModal();
+    const src = card.getAttribute('data-src') || card.querySelector('img')?.getAttribute('src') || '';
+    const caption = card.getAttribute('data-caption') || card.querySelector('span')?.textContent?.trim() || 'PHOTO';
+    if (!src) return;
+    projectModal = document.createElement('div');
+    projectModal.className = 'prj-modal-backdrop photo-modal-backdrop';
+    projectModal.innerHTML = `
+      <figure class="photo-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(caption)}">
+        <button type="button" class="prj-modal-close photo-modal-close" aria-label="Close">ESC</button>
+        <img src="${escapeHtml(src)}" alt="${escapeHtml(caption)}">
+        <figcaption>${escapeHtml(caption)}</figcaption>
+      </figure>
+    `;
+    projectModal.addEventListener('click', (ev) => {
+      if (ev.target === projectModal) closeProjectModal();
+    });
+    projectModal.querySelector('.photo-modal-close')?.addEventListener('click', closeProjectModal);
+    document.body.appendChild(projectModal);
+  }
+
+  function openArcade() {
+    closeProjectModal();
+    projectModal = document.createElement('div');
+    projectModal.className = 'prj-modal-backdrop arcade-backdrop';
+    projectModal.innerHTML = `
+      <section class="arcade-cabinet" role="dialog" aria-modal="true" aria-label="Neon Packet Runner">
+        <div class="arcade-head">
+          <h3>NEON PACKET RUNNER</h3>
+          <button type="button" class="prj-modal-close" aria-label="Close">ESC</button>
+        </div>
+        <canvas class="arcade-canvas" width="320" height="180"></canvas>
+        <div class="arcade-hud">
+          <span id="arcade-score">SCORE 000</span>
+          <span id="arcade-lives">LIVES 3</span>
+          <button type="button" id="arcade-restart">RESTART</button>
+        </div>
+        <p>ARROWS / A-D MOVE · COLLECT CYAN PACKETS · DODGE MAGENTA STATIC</p>
+      </section>
+    `;
+    projectModal.addEventListener('click', (ev) => {
+      if (ev.target === projectModal) closeProjectModal();
+    });
+    projectModal.querySelector('.prj-modal-close')?.addEventListener('click', closeProjectModal);
+    document.body.appendChild(projectModal);
+
+    const canvas = projectModal.querySelector('.arcade-canvas');
+    const ctx2 = canvas.getContext('2d');
+    const scoreEl = projectModal.querySelector('#arcade-score');
+    const livesEl = projectModal.querySelector('#arcade-lives');
+    const restart = projectModal.querySelector('#arcade-restart');
+    const keys = new Set();
+    let raf = 0;
+    let state;
+
+    function reset() {
+      state = { x: 150, tick: 0, score: 0, lives: 3, speed: 1.25, objects: [], gameOver: false };
+      playUiSound('tap');
+    }
+
+    function spawnObject() {
+      const packet = Math.random() < 0.58;
+      state.objects.push({
+        x: 12 + Math.random() * 296,
+        y: -12,
+        s: packet ? 7 : 9,
+        vy: state.speed + Math.random() * 1.2,
+        packet,
+      });
+    }
+
+    function rectHit(a, b) {
+      return a.x < b.x + b.s && a.x + a.w > b.x && a.y < b.y + b.s && a.y + a.h > b.y;
+    }
+
+    function drawPixelShip(x, y) {
+      ctx2.fillStyle = '#36f5ff';
+      ctx2.fillRect(x + 8, y, 8, 4);
+      ctx2.fillRect(x + 4, y + 4, 16, 5);
+      ctx2.fillRect(x, y + 9, 24, 4);
+      ctx2.fillStyle = '#ff2fb3';
+      ctx2.fillRect(x + 2, y + 13, 6, 2);
+      ctx2.fillRect(x + 16, y + 13, 6, 2);
+      ctx2.fillStyle = '#f6ff7a';
+      ctx2.fillRect(x + 11, y + 4, 3, 3);
+    }
+
+    function drawObject(o) {
+      if (o.packet) {
+        ctx2.fillStyle = '#36f5ff';
+        ctx2.fillRect(o.x, o.y, o.s, o.s);
+        ctx2.fillStyle = '#e8fbff';
+        ctx2.fillRect(o.x + 2, o.y + 2, o.s - 4, 1);
+      } else {
+        ctx2.fillStyle = '#ff2fb3';
+        ctx2.fillRect(o.x, o.y, o.s, o.s);
+        ctx2.fillStyle = '#020914';
+        ctx2.fillRect(o.x + 2, o.y + 2, o.s - 4, o.s - 4);
+        ctx2.fillStyle = '#f6ff7a';
+        ctx2.fillRect(o.x + 3, o.y + 3, 2, 2);
+      }
+    }
+
+    function frameArcade() {
+      raf = requestAnimationFrame(frameArcade);
+      state.tick += 1;
+      if (!state.gameOver) {
+        const left = keys.has('ArrowLeft') || keys.has('a') || keys.has('A');
+        const right = keys.has('ArrowRight') || keys.has('d') || keys.has('D');
+        if (left) state.x -= 3.4;
+        if (right) state.x += 3.4;
+        state.x = Math.max(4, Math.min(292, state.x));
+        if (state.tick % Math.max(18, 42 - Math.floor(state.score / 20)) === 0) spawnObject();
+        state.speed = Math.min(3.6, 1.25 + state.score / 90);
+      }
+
+      ctx2.fillStyle = '#020914';
+      ctx2.fillRect(0, 0, canvas.width, canvas.height);
+      ctx2.fillStyle = '#082d46';
+      for (let x = 0; x < canvas.width; x += 16) ctx2.fillRect(x, 0, 1, canvas.height);
+      for (let y = (state.tick % 16); y < canvas.height; y += 16) ctx2.fillRect(0, y, canvas.width, 1);
+
+      const player = { x: state.x, y: 152, w: 24, h: 16 };
+      if (!state.gameOver) {
+        for (let i = state.objects.length - 1; i >= 0; i -= 1) {
+          const o = state.objects[i];
+          o.y += o.vy;
+          drawObject(o);
+          if (rectHit(player, o)) {
+            state.objects.splice(i, 1);
+            if (o.packet) {
+              state.score += 5;
+              playUiSound('score');
+            } else {
+              state.lives -= 1;
+              playUiSound('hit');
+              if (state.lives <= 0) state.gameOver = true;
+            }
+          } else if (o.y > canvas.height + 12) {
+            state.objects.splice(i, 1);
+          }
+        }
+      } else {
+        state.objects.forEach(drawObject);
+      }
+
+      drawPixelShip(player.x, player.y);
+      scoreEl.textContent = `SCORE ${String(state.score).padStart(3, '0')}`;
+      livesEl.textContent = `LIVES ${Math.max(0, state.lives)}`;
+      if (state.gameOver) {
+        ctx2.fillStyle = 'rgba(2,9,20,0.72)';
+        ctx2.fillRect(0, 0, canvas.width, canvas.height);
+        ctx2.fillStyle = '#f6ff7a';
+        ctx2.font = '16px "Press Start 2P", monospace';
+        ctx2.fillText('GAME OVER', 70, 82);
+        ctx2.font = '8px "Press Start 2P", monospace';
+        ctx2.fillText('PRESS RESTART', 94, 104);
+      }
+    }
+
+    function onKey(ev) {
+      if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D'].includes(ev.key)) {
+        ev.preventDefault();
+        keys.add(ev.key);
+      }
+    }
+    function onKeyUp(ev) {
+      keys.delete(ev.key);
+    }
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKeyUp);
+    restart.addEventListener('click', reset);
+    projectModalCleanup = () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+    reset();
+    frameArcade();
+  }
+
+  function assignProjectSerials() {
+    screen.querySelectorAll('.prj').forEach((el, i) => {
+      el.setAttribute('data-sn', (0xA000 + i * 37).toString(16).toUpperCase());
+    });
+  }
+
   function wireProjectCards() {
     screen.querySelectorAll('.prj').forEach((card) => {
+      if (card.dataset.wiredCard === '1') return;
+      card.dataset.wiredCard = '1';
       card.addEventListener('click', () => openProjectModal(card));
       card.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -706,6 +1083,14 @@
           openProjectModal(card);
         }
       });
+    });
+  }
+
+  function wirePhotoCards() {
+    screen.querySelectorAll('.photo-card').forEach((card) => {
+      if (card.dataset.wiredPhoto === '1') return;
+      card.dataset.wiredPhoto = '1';
+      card.addEventListener('click', () => openPhotoModal(card));
     });
   }
 
@@ -750,6 +1135,9 @@
 
   function weatherLabel(w) {
     if (!w) return 'sky sync pending';
+    if (w.mode && w.mode !== 'auto') return `${w.mode.toUpperCase()} // manual skyline`;
+    if (w.snow > 0.25) return 'SNOW // manual flurries';
+    if (w.wind > 0.45) return 'WIND // gust front';
     if (w.rain > 0.55) return 'RAIN // heavy precipitation';
     if (w.rain > 0.2) return 'RAIN // light showers';
     if (w.fog > 0.35) return 'FOG // low visibility';
@@ -764,7 +1152,8 @@
     return [
       `phase: ${phase.toLowerCase()}`,
       `condition: ${weatherLabel(w)}`,
-      `rain: ${w ? Math.round(w.rain * 100) : 0}% · fog: ${w ? Math.round(w.fog * 100) : 0}%`,
+      `rain: ${w ? Math.round(w.rain * 100) : 0}% · snow: ${w ? Math.round((w.snow || 0) * 100) : 0}% · wind: ${w ? Math.round((w.wind || 0) * 100) : 0}%`,
+      `fog: ${w ? Math.round(w.fog * 100) : 0}% · mode: ${w?.mode || 'auto'}`,
       `source: ${w?.source || 'local estimate'}`,
     ];
   }
@@ -898,6 +1287,46 @@
     themeBtn.addEventListener('click', () => {
       const next = cycleTheme(1);
       showToast(`◆ PHOSPHOR · ${THEME_LABELS[next]}`);
+      playUiSound('tap');
+    });
+  }
+
+  const soundBtn = document.getElementById('sound-btn');
+  const soundVolumeInput = document.getElementById('sound-volume');
+  try {
+    const savedVolume = localStorage.getItem('soundVolume');
+    if (savedVolume !== null) soundVolume = Math.max(0, Math.min(1, Number(savedVolume) || soundVolume));
+  } catch (_) {}
+  if (soundBtn) {
+    soundBtn.addEventListener('click', () => {
+      const on = toggleSoundscape(!soundOn);
+      showToast(on ? '◆ SOUNDSCAPE ONLINE' : '◆ SOUNDSCAPE OFFLINE');
+    });
+  }
+  if (soundVolumeInput) {
+    soundVolumeInput.value = String(Math.round(soundVolume * 100));
+    soundVolumeInput.addEventListener('input', () => setSoundscapeVolume(Number(soundVolumeInput.value) / 100));
+  }
+  updateSoundButton();
+
+  const weatherButtons = document.querySelectorAll('[data-weather]');
+  const weatherIntensity = document.getElementById('weather-intensity');
+  function activateWeatherButton(mode) {
+    weatherButtons.forEach((button) => button.classList.toggle('active', button.dataset.weather === mode));
+  }
+  weatherButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const mode = button.dataset.weather || 'auto';
+      const intensity = weatherIntensity ? Number(weatherIntensity.value) / 100 : undefined;
+      const lines = setWeatherPreset(mode, intensity);
+      activateWeatherButton(mode);
+      showToast(`◆ ${lines[0].toUpperCase()}`);
+    });
+  });
+  if (weatherIntensity) {
+    weatherIntensity.addEventListener('input', () => {
+      const active = document.querySelector('[data-weather].active')?.dataset.weather || 'auto';
+      if (active !== 'auto') setWeatherPreset(active, Number(weatherIntensity.value) / 100);
     });
   }
 
