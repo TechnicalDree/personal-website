@@ -1,6 +1,6 @@
 {
   "user": "TechnicalDree",
-  "generatedAt": "2026-06-11T11:21:33.159402+00:00",
+  "generatedAt": "2026-06-12T10:59:59.989965+00:00",
   "years": [
     {
       "year": 2026,
@@ -12818,10 +12818,88 @@
   "commitsByYear": {
     "2026": [
       {
+        "date": "2026-05-25T21:02:22Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "added more projects",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/61a43263fa61021f53159902640cfcc2d61f671e"
+      },
+      {
+        "date": "2026-05-25T21:02:08Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "Merge branch 'main' of https://github.com/TechnicalDree/personal-website",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/aefdac48509009533b6cb19904c896b9b493da50"
+      },
+      {
+        "date": "2026-05-25T08:01:23Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "more ai features and direct text edits by admin",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/6541a46b61dd1a6a03d68675a694548fb207a562"
+      },
+      {
+        "date": "2026-05-08T20:50:31Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "Merge pull request #2 from TechnicalDree/cursor/dev-env-setup-9038",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/afb1c34457aeeff6e7d4457832fccf78f91ed83c"
+      },
+      {
+        "date": "2026-05-08T03:57:34Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "feat: visitor time-of-day sky, weather FX layer, parallax controls (#3)",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/e6521d09ec7e336553a7e5b527180cfd653fc783"
+      },
+      {
+        "date": "2026-05-07T20:30:17Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "update update-dashboard-data.yml",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/7c8f470fca40a5d3ced052ae2bff87aa87c73ddf"
+      },
+      {
         "date": "2026-05-07T16:10:19Z",
         "repo": "TechnicalDree/TechnicalDree",
         "message": "Update README.md",
         "url": "https://github.com/TechnicalDree/TechnicalDree/commit/251726d41ffc820f52bd6fbd6cf52e43f5154189"
+      },
+      {
+        "date": "2026-05-07T05:36:23Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "updated workflows implementation",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/381b53b58ead8d6ac37bd3296693b156be5fd10b"
+      },
+      {
+        "date": "2026-05-07T05:19:55Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "refactored terminal ui",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/4903d37d3ab1bb050d0920e92e89a946b862bf05"
+      },
+      {
+        "date": "2026-05-07T01:51:17Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "make terminal commands interactive",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/5ff853b020290bc02b598ecd6461569dd7c092e4"
+      },
+      {
+        "date": "2026-04-28T16:52:12Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "colder background and properly fetched monkeytype, cursor, wispr data",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/fee9fee59585d74167450824ac773f3373d211eb"
+      },
+      {
+        "date": "2026-04-28T02:45:12Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "initial implementation of personal website",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/b3c176f6b98bf6571e49e78d69d1903b473095a2"
+      },
+      {
+        "date": "2026-04-27T23:06:32Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "Implement cyberpunk pixel terminal personal site (#1)",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/66a60937f2e96905ca0f2a553c448a9856b64682"
+      },
+      {
+        "date": "2026-04-24T07:02:11Z",
+        "repo": "TechnicalDree/personal-website",
+        "message": "Initial commit",
+        "url": "https://github.com/TechnicalDree/personal-website/commit/126287e083a0d29d136a8facf022a23bfa710fc7"
       },
       {
         "date": "2026-04-14T05:00:59Z",
