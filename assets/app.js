@@ -124,7 +124,7 @@
     'photos | open ./photos         view photo roll',
     'contact | open_comms --secure  open uplink',
     'ls | pwd | clear | help        terminal utilities',
-    'sound | arcade | talk           music, mini-game, citizens',
+    'arcade                          launch the mini-game',
     'whoami | neofetch | fortune     system introspection',
     'uptime | ping | stats | email   misc telemetry',
     'cowsay <msg> | theme | matrix   easter eggs',
@@ -354,128 +354,6 @@
     }, 380);
   }
 
-  let audioCtx = null;
-  let masterGain = null;
-  let droneNodes = [];
-  let musicTimer = null;
-  let soundOn = false;
-  let soundVolume = 0.22;
-
-  function ensureAudio() {
-    if (audioCtx) return audioCtx;
-    const AudioCtor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtor) return null;
-    audioCtx = new AudioCtor();
-    masterGain = audioCtx.createGain();
-    masterGain.gain.value = soundVolume;
-    masterGain.connect(audioCtx.destination);
-    return audioCtx;
-  }
-
-  function playTone(freq, dur = 0.12, type = 'square', gain = 0.08) {
-    const ctx2 = ensureAudio();
-    if (!ctx2 || !masterGain) return;
-    const osc = ctx2.createOscillator();
-    const g = ctx2.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    g.gain.setValueAtTime(0.0001, ctx2.currentTime);
-    g.gain.exponentialRampToValueAtTime(gain, ctx2.currentTime + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx2.currentTime + dur);
-    osc.connect(g);
-    g.connect(masterGain);
-    osc.start();
-    osc.stop(ctx2.currentTime + dur + 0.03);
-  }
-
-  function startSoundscape() {
-    const ctx2 = ensureAudio();
-    if (!ctx2 || !masterGain) return false;
-    if (ctx2.state === 'suspended') ctx2.resume();
-    stopSoundscape(false);
-    soundOn = true;
-    masterGain.gain.value = soundVolume;
-
-    [55, 82.41].forEach((freq, i) => {
-      const osc = ctx2.createOscillator();
-      const g = ctx2.createGain();
-      osc.type = i === 0 ? 'sawtooth' : 'triangle';
-      osc.frequency.value = freq;
-      g.gain.value = i === 0 ? 0.035 : 0.022;
-      osc.connect(g);
-      g.connect(masterGain);
-      osc.start();
-      droneNodes.push({ osc, g });
-    });
-
-    const arp = [220, 277.18, 329.63, 440, 554.37, 440, 329.63, 277.18];
-    let step = 0;
-    musicTimer = setInterval(() => {
-      if (!soundOn) return;
-      playTone(arp[step % arp.length], 0.09, step % 3 === 0 ? 'triangle' : 'square', 0.045);
-      step += 1;
-    }, 380);
-    updateSoundButton();
-    return true;
-  }
-
-  function stopSoundscape(updateButton = true) {
-    if (musicTimer) clearInterval(musicTimer);
-    musicTimer = null;
-    droneNodes.forEach(({ osc }) => {
-      try { osc.stop(); } catch (_) {}
-    });
-    droneNodes = [];
-    soundOn = false;
-    if (updateButton) updateSoundButton();
-  }
-
-  function toggleSoundscape(force) {
-    if (force === true || (!soundOn && force !== false)) return startSoundscape();
-    stopSoundscape();
-    return false;
-  }
-
-  function setSoundscapeVolume(value) {
-    soundVolume = Math.max(0, Math.min(1, Number(value) || 0));
-    if (masterGain) masterGain.gain.value = soundVolume;
-    try { localStorage.setItem('soundVolume', String(soundVolume)); } catch (_) {}
-    updateSoundButton();
-  }
-
-  function updateSoundButton() {
-    const btn = document.getElementById('sound-btn');
-    const label = document.getElementById('sound-label');
-    const volume = document.getElementById('sound-volume');
-    if (btn) {
-      btn.classList.toggle('is-on', soundOn);
-      btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
-    }
-    if (label) label.textContent = soundOn ? 'ON' : 'OFF';
-    if (volume && Number(volume.value) !== Math.round(soundVolume * 100)) {
-      volume.value = String(Math.round(soundVolume * 100));
-    }
-  }
-
-  function playUiSound(kind = 'tap') {
-    if (!soundOn) return;
-    const map = {
-      tap: [660, 0.055, 'square', 0.04],
-      score: [880, 0.08, 'square', 0.05],
-      hit: [110, 0.16, 'sawtooth', 0.08],
-    };
-    playTone(...(map[kind] || map.tap));
-  }
-
-  function summonCityDialogue() {
-    const bg = window.CityBackground;
-    if (bg && typeof bg.summonDialogue === 'function') {
-      const line = bg.summonDialogue();
-      playUiSound('tap');
-      return [`citizen ping: "${line}"`, '// run talk again to hear more citizens'];
-    }
-    return ['// city dialogue unavailable'];
-  }
 
   function executeCommand(rawCommand) {
     const input = rawCommand.trim();
@@ -514,21 +392,9 @@
         '       shell: terminal-ui',
         '       stack: python · c++ · java · ts · react · aws',
       ]);
-    } else if (normalized === 'sound' || normalized === 'music' || normalized === 'sound on' || normalized === 'music on') {
-      const ok = toggleSoundscape(true);
-      renderTerminalOutput(input, ok ? ['soundscape online', '// synth bed + UI tones enabled'] : ['// Web Audio unavailable']);
-    } else if (normalized === 'sound off' || normalized === 'music off') {
-      toggleSoundscape(false);
-      renderTerminalOutput(input, ['soundscape offline']);
-    } else if (normalized.startsWith('volume ')) {
-      const pct = Number(normalized.replace('volume ', ''));
-      setSoundscapeVolume(Number.isFinite(pct) ? pct / 100 : soundVolume);
-      renderTerminalOutput(input, [`volume: ${Math.round(soundVolume * 100)}%`]);
     } else if (normalized === 'arcade' || normalized === 'minigame' || normalized === 'neon runner') {
       openArcade();
       renderTerminalOutput(input, ['arcade cabinet opened', '// arrow keys or A/D to move · collect cyan packets']);
-    } else if (normalized === 'talk' || normalized === 'citizen' || normalized === 'talk city') {
-      renderTerminalOutput(input, summonCityDialogue());
     } else if (normalized === 'fortune' || normalized === 'motd') {
       const quote = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
       renderTerminalOutput(input, [`"${quote}"`, '// adrian-os fortune daemon']);
@@ -633,11 +499,7 @@
       'clear',
       'whoami',
       'neofetch',
-      'sound',
-      'sound off',
-      'volume',
       'arcade',
-      'talk',
       'fortune',
       'uptime',
       'ping',
@@ -908,7 +770,6 @@
 
     function reset() {
       state = { x: 150, tick: 0, score: 0, lives: 3, speed: 1.25, objects: [], gameOver: false };
-      playUiSound('tap');
     }
 
     function spawnObject() {
@@ -983,10 +844,8 @@
             state.objects.splice(i, 1);
             if (o.packet) {
               state.score += 5;
-              playUiSound('score');
             } else {
               state.lives -= 1;
-              playUiSound('hit');
               if (state.lives <= 0) state.gameOver = true;
             }
           } else if (o.y > canvas.height + 12) {
@@ -1225,27 +1084,8 @@
     themeBtn.addEventListener('click', () => {
       const next = cycleTheme(1);
       showToast(`◆ PHOSPHOR · ${THEME_LABELS[next]}`);
-      playUiSound('tap');
     });
   }
-
-  const soundBtn = document.getElementById('sound-btn');
-  const soundVolumeInput = document.getElementById('sound-volume');
-  try {
-    const savedVolume = localStorage.getItem('soundVolume');
-    if (savedVolume !== null) soundVolume = Math.max(0, Math.min(1, Number(savedVolume) || soundVolume));
-  } catch (_) {}
-  if (soundBtn) {
-    soundBtn.addEventListener('click', () => {
-      const on = toggleSoundscape(!soundOn);
-      showToast(on ? '◆ SOUNDSCAPE ONLINE' : '◆ SOUNDSCAPE OFFLINE');
-    });
-  }
-  if (soundVolumeInput) {
-    soundVolumeInput.value = String(Math.round(soundVolume * 100));
-    soundVolumeInput.addEventListener('input', () => setSoundscapeVolume(Number(soundVolumeInput.value) / 100));
-  }
-  updateSoundButton();
 
   // --- Idle skyline mode (auto-hide terminal after inactivity) ---
   const IDLE_MS = 90000;

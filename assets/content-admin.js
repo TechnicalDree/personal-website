@@ -163,7 +163,6 @@
   function applyAbout(root) {
     applyField(root, '.view-about .lede', 'about.ledeHtml', 'html');
     applyField(root, '.view-about .body', 'about.bodyHtml', 'html');
-    applyField(root, '.view-about .quote p', 'about.quote', 'text');
     const bullets = root.querySelectorAll('.view-about .bullet li');
     content.about.signals.forEach((line, index) => {
       const li = bullets[index];

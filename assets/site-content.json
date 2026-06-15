@@ -250,7 +250,6 @@
   "about": {
     "ledeHtml": "I'm Adrian Muñoz, a CMU electrical and computer engineer who likes turning ambiguous technical problems into reliable software people can actually use.",
     "bodyHtml": "My recent work spans enterprise email and notification infrastructure at <b>Harvey AI</b>, production admin tooling at <b>Atlassian</b>, AWS data-processing infrastructure at <b>Amazon</b>, AI model evaluation at <b>Outlier</b>, and projects across CUDA, networking, browser privacy, cryptography, robotics, XR, and ML systems.",
-    "quote": "I like software that connects low-level engineering discipline with polished product behavior.",
     "signals": [
       "BS+MS in Electrical & Computer Engineering at Carnegie Mellon, minor in Robotics.",
       "Relevant coursework: Computer Systems, Embedded Systems, XR Systems, Full-Stack Development, Computer Networks, Machine Learning, Data Structures & Algorithms, Intelligent Robot Systems, Browser Security, Statistical Computing, and Matrices.",
