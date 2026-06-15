@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
-import { createCityLayout, parseCitySeed } from './city-3d-layout.js';
+import { createCityLayout, parseCitySeed, createRng } from './city-3d-layout.js?v=20260614b';
 
 const canvas = document.getElementById('bg-city3d');
 const params = new URLSearchParams(window.location.search);
@@ -22,6 +22,7 @@ let animationFrame = 0;
 let frameCount = 0;
 let lastFrame = performance.now();
 let elapsed = 0;
+let scrollDistance = 0;
 let speed = 1;
 let pointerX = 0;
 let pointerY = 0;
@@ -33,6 +34,8 @@ let buildingMaterials = [];
 let accentMaterials = [];
 let windowMaterials = [];
 let signRecords = [];
+let flyers = [];
+let flyersGroup = null;
 let disposed = false;
 
 const fallbackSeed = () => {
@@ -164,6 +167,7 @@ function applyTheme(name) {
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
 const unitPlane = new THREE.PlaneGeometry(1, 1);
 const unitCylinder = new THREE.CylinderGeometry(0.5, 0.5, 1, 6, 1, false);
+const unitSphere = new THREE.SphereGeometry(0.5, 12, 8);
 const windowMatrices = [[], [], []];
 const dummy = new THREE.Object3D();
 
@@ -456,12 +460,52 @@ function finishWindows(parent) {
   });
 }
 
+function buildRoad(parent, road) {
+  const col = palette.col;
+  // The road is one period wide and lives inside the tiled/scrolling city group,
+  // so it slides along with the buildings and wraps seamlessly. It sits in the
+  // clear lane between the front strip and the strips behind it.
+  const laneMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(col.streetDark).lerp(new THREE.Color(col.bld4), 0.45),
+    roughness: 0.5,
+    metalness: 0.5,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const lane = new THREE.Mesh(new THREE.PlaneGeometry(road.period, road.depth), laneMat);
+  lane.rotation.x = -Math.PI / 2;
+  lane.position.set(0, -0.28, road.z);
+  lane.receiveShadow = true;
+  parent.add(lane);
+
+  // Center dashes — the primary motion cue now that the road scrolls. The dash
+  // spacing divides the period evenly so the markings tile seamlessly on wrap.
+  const dashCount = 20;
+  const dashSpacing = road.period / dashCount;
+  for (let i = 0; i < dashCount; i++) {
+    const x = -road.period / 2 + (i + 0.5) * dashSpacing;
+    addMass(parent, {
+      x, y: -0.02, z: road.z, w: 3.6, h: 0.06, d: 0.5,
+      material: accentMaterials[i % 3], castShadow: false,
+    });
+  }
+
+  // Glowing edge lines along the front and back of the lane.
+  [road.z - road.depth / 2 + 0.45, road.z + road.depth / 2 - 0.45].forEach((edgeZ, index) => {
+    addMass(parent, {
+      x: 0, y: -0.02, z: edgeZ, w: road.period, h: 0.05, d: 0.16,
+      material: accentMaterials[index === 0 ? 0 : 1], castShadow: false,
+    });
+  });
+}
+
 function buildCity() {
   const layout = createCityLayout(seed);
   const baseCity = new THREE.Group();
   layout.landmarks.forEach((item) => landmarkBuilders[item.kind](baseCity, item));
   layout.supporting.forEach((item) => buildSupport(baseCity, item));
   finishWindows(baseCity);
+  buildRoad(baseCity, layout.road);
 
   cityRoot = new THREE.Group();
   [-WORLD_WIDTH, 0, WORLD_WIDTH].forEach((offset, index) => {
@@ -473,8 +517,11 @@ function buildCity() {
 }
 
 function buildGround() {
+  // Static dark floor spanning every strip from the front row to the far
+  // background. The road lane + markings (which convey motion) live in the
+  // scrolling city group instead.
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(WORLD_WIDTH * 3, 86),
+    new THREE.PlaneGeometry(WORLD_WIDTH * 3, 180),
     new THREE.MeshStandardMaterial({
       color: palette.col.streetDark,
       roughness: 0.48,
@@ -484,15 +531,120 @@ function buildGround() {
     }),
   );
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set(0, -0.36, 17);
+  ground.position.set(0, -0.4, -6);
   ground.receiveShadow = true;
   scene.add(ground);
+}
 
-  for (let x = -WORLD_WIDTH * 1.5; x <= WORLD_WIDTH * 1.5; x += 8) {
-    addMass(scene, {
-      x, y: -0.05, z: 18, w: 3.6, h: 0.05, d: 0.18,
-      material: accentMaterials[Math.abs(Math.round(x / 8)) % 3], castShadow: false,
+const FLYER_BOUND = WORLD_WIDTH * 0.62;
+
+function addFlyerPart(group, geometry, material, opts) {
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(opts.x || 0, opts.y || 0, opts.z || 0);
+  mesh.scale.set(opts.sx || 1, opts.sy || 1, opts.sz || 1);
+  if (opts.rotY) mesh.rotation.y = opts.rotY;
+  mesh.castShadow = false;
+  group.add(mesh);
+  return mesh;
+}
+
+// 3D flying traffic: airships, drones and streaking flying cars. They drift on
+// their own velocity (independent of the building scroll) so the sky always
+// feels alive, even when the speed slider freezes the buildings.
+function buildFlyers() {
+  flyers = [];
+  flyersGroup = new THREE.Group();
+  const rng = createRng((seed ^ 0x9e3779b9) >>> 0);
+  const rand = (min, max) => min + (max - min) * rng();
+  const TAU = Math.PI * 2;
+
+  // --- Airships: big, slow, branded ---
+  const airshipDefs = [
+    { sign: 'KAI-CORP', accent: 1, baseY: 58, z: -4, vx: 0.06 },
+    { sign: 'SYS//07', accent: 0, baseY: 67, z: 12, vx: -0.045 },
+    { sign: 'CMU-LIFT', accent: 2, baseY: 49, z: -22, vx: 0.034 },
+  ];
+  airshipDefs.forEach((def) => {
+    const group = new THREE.Group();
+    const len = rand(17, 24);
+    const rad = rand(3.4, 4.6);
+    addFlyerPart(group, unitSphere, buildingMaterials[3], { sx: len, sy: rad, sz: rad });
+    addFlyerPart(group, unitSphere, accentMaterials[def.accent], { x: len * 0.42, sx: rad * 0.5, sy: rad * 0.5, sz: rad * 0.5 });
+    addFlyerPart(group, unitBox, buildingMaterials[1], { y: -rad * 0.9, sx: len * 0.3, sy: rad * 0.45, sz: rad * 0.55 });
+    addFlyerPart(group, unitBox, accentMaterials[def.accent], { y: -rad * 0.55, sx: len * 0.66, sy: 0.28, sz: rad * 0.6 });
+    addSign(group, def.sign, 0, 0, rad + 0.25, len * 0.5, rad * 1.1, def.accent);
+    const x = rand(-FLYER_BOUND, FLYER_BOUND);
+    group.position.set(x, def.baseY, def.z);
+    flyersGroup.add(group);
+    flyers.push({
+      mesh: group, x, z: def.z, baseY: def.baseY, vx: def.vx,
+      bobSpeed: rand(0.3, 0.5), bobPhase: rand(0, TAU), bobAmp: rand(0.8, 1.6),
     });
+  });
+
+  // --- Drones / droids: small bobbing orbs and boxes ---
+  for (let i = 0; i < 12; i++) {
+    const group = new THREE.Group();
+    const accent = i % 3;
+    const orb = rng() < 0.5;
+    addFlyerPart(group, orb ? unitSphere : unitBox, buildingMaterials[2], {
+      sx: orb ? 2 : 2.3, sy: orb ? 2 : 1.5, sz: orb ? 2 : 2.3,
+    });
+    addFlyerPart(group, unitBox, accentMaterials[accent], { z: orb ? 1.05 : 1.2, sx: 0.8, sy: 0.4, sz: 0.4 });
+    const baseY = rand(34, 72);
+    const z = rand(-28, 14);
+    const x = rand(-FLYER_BOUND, FLYER_BOUND);
+    group.position.set(x, baseY, z);
+    flyersGroup.add(group);
+    flyers.push({
+      mesh: group, x, z, baseY, vx: (rng() < 0.5 ? -1 : 1) * rand(0.03, 0.09),
+      bobSpeed: rand(0.6, 1.1), bobPhase: rand(0, TAU), bobAmp: rand(1.2, 2.4),
+      spin: orb ? 0 : (rng() < 0.5 ? -1 : 1) * 0.04,
+    });
+  }
+
+  // --- Flying cars: fast, with a fading trail ---
+  for (let i = 0; i < 14; i++) {
+    const group = new THREE.Group();
+    const accent = i % 3;
+    const dir = rng() < 0.5 ? 1 : -1;
+    addFlyerPart(group, unitBox, accentMaterials[accent], { sx: rand(2.2, 3.4), sy: 0.7, sz: 1.0 });
+    const trail = addFlyerPart(group, unitBox, windowMaterials[accent], { sx: rand(4, 7), sy: 0.34, sz: 0.5 });
+    const trailOffset = rand(3, 5);
+    trail.position.x = -dir * trailOffset;
+    const baseY = rand(28, 64);
+    const z = rand(-26, 16);
+    const x = rand(-FLYER_BOUND, FLYER_BOUND);
+    group.position.set(x, baseY, z);
+    flyersGroup.add(group);
+    flyers.push({
+      mesh: group, x, z, baseY, vx: dir * rand(0.35, 0.7),
+      bobSpeed: rand(0.4, 0.8), bobPhase: rand(0, TAU), bobAmp: rand(0.4, 0.9),
+      trail, trailOffset, dir,
+    });
+  }
+
+  scene.add(flyersGroup);
+}
+
+function updateFlyers(delta) {
+  if (!flyersGroup || flyers.length === 0) return;
+  const step = delta * 60;
+  const span = FLYER_BOUND * 2;
+  for (let i = 0; i < flyers.length; i++) {
+    const flyer = flyers[i];
+    if (!reducedMotion) {
+      flyer.x += flyer.vx * step;
+      if (flyer.x > FLYER_BOUND) flyer.x -= span;
+      else if (flyer.x < -FLYER_BOUND) flyer.x += span;
+    }
+    const bobY = reducedMotion ? 0 : Math.sin(elapsed * flyer.bobSpeed + flyer.bobPhase) * flyer.bobAmp;
+    flyer.mesh.position.set(flyer.x, flyer.baseY + bobY, flyer.z);
+    if (flyer.spin && !reducedMotion) flyer.mesh.rotation.y += flyer.spin * step;
+    if (flyer.trail) {
+      const direction = Math.sign(flyer.vx) || flyer.dir;
+      flyer.trail.position.x = -direction * flyer.trailOffset;
+    }
   }
 }
 
@@ -622,8 +774,11 @@ function renderFrame(now) {
   const delta = Math.min(0.05, Math.max(0, (now - lastFrame) / 1000));
   lastFrame = now;
   elapsed += delta;
-  const scroll = reducedMotion ? 0 : (elapsed * speed * 1.45) % WORLD_WIDTH;
-  cityRoot.position.x = -scroll;
+  // Accumulate scroll distance so changing speed (or freezing it to 0 while the
+  // slider is dragged) never teleports the city — it just pauses and resumes.
+  if (!reducedMotion) scrollDistance += delta * speed * 1.45;
+  cityRoot.position.x = -(scrollDistance % WORLD_WIDTH);
+  updateFlyers(delta);
 
   if (!reducedMotion) {
     pointerX += (pointerTargetX - pointerX) * 0.04;
@@ -725,6 +880,7 @@ async function init() {
   makeMaterials();
   buildCity();
   buildGround();
+  buildFlyers();
   renderTarget = new THREE.WebGLRenderTarget(1, 1, {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,

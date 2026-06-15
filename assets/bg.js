@@ -36,23 +36,38 @@
 
   const speedInput = document.getElementById('city-speed');
   const speedValue = document.getElementById('city-speed-value');
-  function setCitySpeed(value) {
-    citySpeed = Math.max(0, Math.min(2.5, Number(value) || 0));
-    if (speedValue) speedValue.textContent = `${citySpeed.toFixed(1)}x`;
-    try { localStorage.setItem('citySpeed', String(citySpeed)); } catch (_) {}
+  const clampSpeed = (value) => Math.max(0, Math.min(2.5, Number(value) || 0));
+  // Hand a scroll speed to both renderers. While the slider is being dragged we
+  // hold this at 0 so the city stays put; the chosen value is committed on release.
+  function applyScrollSpeed(value) {
+    citySpeed = value;
     if (window.City3D && typeof window.City3D.setSpeed === 'function') {
-      window.City3D.setSpeed(citySpeed);
+      window.City3D.setSpeed(value);
     }
-    window.dispatchEvent(new CustomEvent('city-speed', {
-      detail: { speed: citySpeed },
-    }));
+    window.dispatchEvent(new CustomEvent('city-speed', { detail: { speed: value } }));
+  }
+  function showSpeed(value) {
+    if (speedValue) speedValue.textContent = `${value.toFixed(1)}x`;
+  }
+  // Drag preview: show the target number, but keep the city frozen.
+  function previewCitySpeed(value) {
+    showSpeed(clampSpeed(value));
+    applyScrollSpeed(0);
+  }
+  // Commit (slider release / keyboard / programmatic): start moving at the value.
+  function commitCitySpeed(value) {
+    const v = clampSpeed(value);
+    showSpeed(v);
+    try { localStorage.setItem('citySpeed', String(v)); } catch (_) {}
+    applyScrollSpeed(v);
   }
   if (speedInput) {
     let savedSpeed = null;
     try { savedSpeed = localStorage.getItem('citySpeed'); } catch (_) {}
     if (savedSpeed !== null) speedInput.value = savedSpeed;
-    setCitySpeed(speedInput.value);
-    speedInput.addEventListener('input', () => setCitySpeed(speedInput.value));
+    commitCitySpeed(speedInput.value);
+    speedInput.addEventListener('input', () => previewCitySpeed(speedInput.value));
+    speedInput.addEventListener('change', () => commitCitySpeed(speedInput.value));
   }
 
   // ---------- PALETTE ----------
@@ -1923,14 +1938,18 @@
     ctx = foregroundCtx;
     baseTransform();
     ctx.clearRect(0, 0, W, H);
-    airships.forEach(a => drawAirship(a, T));
+    // Sky flyers (airships, flying cars, drones, sky creatures) hand off to the
+    // 3D skyline once WebGL is live; keep drawing them in the 2D fallback.
+    if (!city3DReady) {
+      airships.forEach(a => drawAirship(a, T));
+    }
     drawTrain(T);
     drawElevatedRails(cityT);
-    vehicles.forEach(v => drawVehicle(v, T));
-    creatures.forEach(c => drawCreature(c, T));
-
-    // Drones
-    droids.forEach(d => drawDroid(d, T));
+    if (!city3DReady) {
+      vehicles.forEach(v => drawVehicle(v, T));
+      creatures.forEach(c => drawCreature(c, T));
+      droids.forEach(d => drawDroid(d, T));
+    }
 
     // Street + people + cars
     drawStreet(cityT);

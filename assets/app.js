@@ -1191,7 +1191,7 @@
     const speedInput = document.getElementById('city-speed');
     if (speedInput) {
       speedInput.value = '2.5';
-      speedInput.dispatchEvent(new Event('input', { bubbles: true }));
+      speedInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
 
