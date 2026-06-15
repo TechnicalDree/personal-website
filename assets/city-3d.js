@@ -601,13 +601,10 @@ function updateEnvironment() {
   const solar = environment && typeof environment.getLocalSolar === 'function'
     ? environment.getLocalSolar()
     : { starVisibility: 1, sun: { show: false } };
-  const weather = environment && typeof environment.getWeather === 'function'
-    ? environment.getWeather()
-    : { fog: 0.08, rain: 0 };
   const night = Math.max(0, Math.min(1, solar.starVisibility ?? 1));
   ambientLight.intensity = 0.48 + night * 0.42;
   directionalLight.intensity = 1.1 - night * 0.35;
-  scene.fog.density = 0.006 + Math.max(0, weather.fog || 0) * 0.018 + Math.max(0, weather.rain || 0) * 0.004;
+  scene.fog.density = 0.006 + 0.0014 + night * 0.0024;
 }
 
 function renderFrame(now) {

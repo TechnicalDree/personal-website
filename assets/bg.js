@@ -1982,56 +1982,6 @@
     lastPhosphorTheme = name;
   }
 
-  function showCitySpeech(clientX, clientY, line) {
-    const existing = document.querySelector('.city-speech');
-    if (existing) existing.remove();
-    const bubble = document.createElement('div');
-    bubble.className = 'city-speech';
-    bubble.textContent = line;
-    bubble.style.left = `${Math.max(12, Math.min(window.innerWidth - 180, clientX - 68))}px`;
-    bubble.style.top = `${Math.max(12, Math.min(window.innerHeight - 80, clientY - 52))}px`;
-    document.body.appendChild(bubble);
-    setTimeout(() => bubble.remove(), 2600);
-  }
-
-  function clientToCity(clientX, clientY) {
-    const r = canvas.getBoundingClientRect();
-    return {
-      x: ((clientX - r.left) / Math.max(1, r.width)) * W,
-      y: ((clientY - r.top) / Math.max(1, r.height)) * H,
-    };
-  }
-
-  function findNearestActor(pt) {
-    const actors = [
-      ...people.map((p) => ({ actor: p, x: p.x, y: p.y, line: p.line })),
-      ...robots.map((r) => ({ actor: r, x: r.x + 5, y: r.y + 5, line: r.line })),
-      ...creatures.map((c) => ({ actor: c, x: c.x + 24, y: c.y, line: c.line })),
-    ];
-    let best = null;
-    for (let i = 0; i < actors.length; i++) {
-      const a = actors[i];
-      const dx = a.x - pt.x;
-      const dy = a.y - pt.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 42 && (!best || dist < best.dist)) best = { ...a, dist };
-    }
-    return best;
-  }
-
-  function interactAt(clientX, clientY) {
-    const pt = clientToCity(clientX, clientY);
-    const hit = findNearestActor(pt);
-    if (!hit) {
-      const line = 'tap a citizen, bot, or sky creature';
-      showCitySpeech(clientX, clientY, line);
-      return line;
-    }
-    hit.actor.talkUntil = T + 220;
-    showCitySpeech(clientX, clientY, hit.line);
-    return hit.line;
-  }
-
   function summonDialogue() {
     const pool = [...people, ...robots, ...creatures];
     const actor = pick(pool);
@@ -2039,11 +1989,7 @@
     return actor.line || 'hello skyline';
   }
 
-  canvas.addEventListener('click', (e) => {
-    interactAt(e.clientX, e.clientY);
-  });
-
-  window.CityBackground = { applyPhosphorTheme, interactAt, summonDialogue };
+  window.CityBackground = { applyPhosphorTheme, summonDialogue };
 
   window.addEventListener('city-3d-ready', (e) => {
     city3DReady = Boolean(e.detail && e.detail.ready);

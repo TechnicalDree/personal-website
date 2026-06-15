@@ -124,7 +124,6 @@
     'photos | open ./photos         view photo roll',
     'contact | open_comms --secure  open uplink',
     'ls | pwd | clear | help        terminal utilities',
-    'weather | rain | snow | wind    control skyline weather',
     'sound | arcade | talk           music, mini-game, citizens',
     'whoami | neofetch | fortune     system introspection',
     'uptime | ping | stats | email   misc telemetry',
@@ -462,25 +461,10 @@
     if (!soundOn) return;
     const map = {
       tap: [660, 0.055, 'square', 0.04],
-      weather: [330, 0.12, 'triangle', 0.05],
       score: [880, 0.08, 'square', 0.05],
       hit: [110, 0.16, 'sawtooth', 0.08],
     };
     playTone(...(map[kind] || map.tap));
-  }
-
-  function setWeatherPreset(mode, intensity) {
-    const env = window.CityEnvironment;
-    if (!env || typeof env.setWeatherMode !== 'function') {
-      return ['// weather controls unavailable'];
-    }
-    const next = env.setWeatherMode(mode, intensity);
-    updateEnvHud();
-    playUiSound('weather');
-    return [
-      `weather mode: ${next.mode}`,
-      `rain: ${Math.round(next.rain * 100)}% · snow: ${Math.round((next.snow || 0) * 100)}% · wind: ${Math.round((next.wind || 0) * 100)}%`,
-    ];
   }
 
   function summonCityDialogue() {
@@ -488,7 +472,7 @@
     if (bg && typeof bg.summonDialogue === 'function') {
       const line = bg.summonDialogue();
       playUiSound('tap');
-      return [`citizen ping: "${line}"`, '// hide terminal or click the skyline to talk to more citizens'];
+      return [`citizen ping: "${line}"`, '// run talk again to hear more citizens'];
     }
     return ['// city dialogue unavailable'];
   }
@@ -530,18 +514,6 @@
         '       shell: terminal-ui',
         '       stack: python · c++ · java · ts · react · aws',
       ]);
-    } else if (normalized === 'weather') {
-      renderTerminalOutput(input, getWeatherLines());
-    } else if (normalized === 'weather auto' || normalized === 'auto weather') {
-      renderTerminalOutput(input, setWeatherPreset('auto'));
-    } else if (normalized === 'rain' || normalized === 'weather rain') {
-      renderTerminalOutput(input, setWeatherPreset('rain', 0.9));
-    } else if (normalized === 'snow' || normalized === 'weather snow') {
-      renderTerminalOutput(input, setWeatherPreset('snow', 0.82));
-    } else if (normalized === 'wind' || normalized === 'weather wind') {
-      renderTerminalOutput(input, setWeatherPreset('wind', 0.95));
-    } else if (normalized === 'clear sky' || normalized === 'clear weather' || normalized === 'weather clear') {
-      renderTerminalOutput(input, setWeatherPreset('clear', 0));
     } else if (normalized === 'sound' || normalized === 'music' || normalized === 'sound on' || normalized === 'music on') {
       const ok = toggleSoundscape(true);
       renderTerminalOutput(input, ok ? ['soundscape online', '// synth bed + UI tones enabled'] : ['// Web Audio unavailable']);
@@ -661,12 +633,6 @@
       'clear',
       'whoami',
       'neofetch',
-      'weather',
-      'weather auto',
-      'weather clear',
-      'rain',
-      'snow',
-      'wind',
       'sound',
       'sound off',
       'volume',
@@ -1121,9 +1087,8 @@
   setInterval(updateSysBars, 2200);
   updateSysBars();
 
-  // --- Environment HUD (sky phase + weather) ---
+  // --- Environment HUD (sky phase) ---
   const envPhase = document.getElementById('env-phase');
-  const envWeather = document.getElementById('env-weather');
   const envPhosphor = document.getElementById('env-phosphor');
 
   function phaseLabel(hour) {
@@ -1133,36 +1098,10 @@
     return 'NIGHT';
   }
 
-  function weatherLabel(w) {
-    if (!w) return 'sky sync pending';
-    if (w.mode && w.mode !== 'auto') return `${w.mode.toUpperCase()} // manual skyline`;
-    if (w.snow > 0.25) return 'SNOW // manual flurries';
-    if (w.wind > 0.45) return 'WIND // gust front';
-    if (w.rain > 0.55) return 'RAIN // heavy precipitation';
-    if (w.rain > 0.2) return 'RAIN // light showers';
-    if (w.fog > 0.35) return 'FOG // low visibility';
-    if (w.cloud > 0.55) return 'CLOUDY // overcast';
-    return 'CLEAR // neon horizon';
-  }
-
-  function getWeatherLines() {
-    const w = window.CityEnvironment?.getWeather?.();
-    const solar = window.CityEnvironment?.getLocalSolar?.() || {};
-    const phase = phaseLabel(solar.hour || new Date().getHours());
-    return [
-      `phase: ${phase.toLowerCase()}`,
-      `condition: ${weatherLabel(w)}`,
-      `rain: ${w ? Math.round(w.rain * 100) : 0}% · snow: ${w ? Math.round((w.snow || 0) * 100) : 0}% · wind: ${w ? Math.round((w.wind || 0) * 100) : 0}%`,
-      `fog: ${w ? Math.round(w.fog * 100) : 0}% · mode: ${w?.mode || 'auto'}`,
-      `source: ${w?.source || 'local estimate'}`,
-    ];
-  }
-
   function updateEnvHud() {
     const solar = window.CityEnvironment?.getLocalSolar?.() || { hour: new Date().getHours() };
     const theme = document.body.dataset.theme || 'default';
     if (envPhase) envPhase.textContent = phaseLabel(solar.hour);
-    if (envWeather) envWeather.textContent = weatherLabel(window.CityEnvironment?.getWeather?.());
     if (envPhosphor) envPhosphor.textContent = THEME_LABELS[theme] || 'CYAN';
   }
   setInterval(updateEnvHud, 5000);
@@ -1235,7 +1174,6 @@
     'Mounting /home/adrian ...... OK',
     'Loading pixel skyline renderer',
     'Syncing github telemetry ..... OK',
-    'Fetching open-meteo weather .. OK',
     'Starting terminal shell ...... OK',
     '',
     'Welcome, operator.',
@@ -1308,27 +1246,6 @@
     soundVolumeInput.addEventListener('input', () => setSoundscapeVolume(Number(soundVolumeInput.value) / 100));
   }
   updateSoundButton();
-
-  const weatherButtons = document.querySelectorAll('[data-weather]');
-  const weatherIntensity = document.getElementById('weather-intensity');
-  function activateWeatherButton(mode) {
-    weatherButtons.forEach((button) => button.classList.toggle('active', button.dataset.weather === mode));
-  }
-  weatherButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const mode = button.dataset.weather || 'auto';
-      const intensity = weatherIntensity ? Number(weatherIntensity.value) / 100 : undefined;
-      const lines = setWeatherPreset(mode, intensity);
-      activateWeatherButton(mode);
-      showToast(`◆ ${lines[0].toUpperCase()}`);
-    });
-  });
-  if (weatherIntensity) {
-    weatherIntensity.addEventListener('input', () => {
-      const active = document.querySelector('[data-weather].active')?.dataset.weather || 'auto';
-      if (active !== 'auto') setWeatherPreset(active, Number(weatherIntensity.value) / 100);
-    });
-  }
 
   // --- Idle skyline mode (auto-hide terminal after inactivity) ---
   const IDLE_MS = 90000;

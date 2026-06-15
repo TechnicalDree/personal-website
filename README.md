@@ -55,10 +55,9 @@ Then visit <http://localhost:8000>.
 - Click the left-side `[NN] LABEL` nav entries to switch terminal views.
 - Click `HIDE` (top-right) — or press `Esc` / `B` — to fade the terminal and
   reveal the full city background.
-- Use the weather controls to switch between auto, clear, rain, snow, and wind.
 - Use the sound control or terminal `sound` command to start the synth soundscape.
-- Run `arcade` in the terminal to play the mini-game; run `talk` or click the
-  exposed skyline to interact with city citizens and bots.
+- Run `arcade` in the terminal to play the mini-game; run `talk` to interact with
+  city citizens and bots.
 
 ## Edit site content (admin only)
 

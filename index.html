@@ -31,16 +31,6 @@
     <input id="city-speed" type="range" min="0" max="2.5" step="0.1" value="1">
     <span id="city-speed-value">1.0x</span>
   </div>
-  <div class="weather-controls" aria-label="Skyline weather controls">
-    <span class="weather-title">WEATHER</span>
-    <button type="button" data-weather="auto" class="active">AUTO</button>
-    <button type="button" data-weather="clear">CLEAR</button>
-    <button type="button" data-weather="rain">RAIN</button>
-    <button type="button" data-weather="snow">SNOW</button>
-    <button type="button" data-weather="wind">WIND</button>
-    <label for="weather-intensity">INTENSITY</label>
-    <input id="weather-intensity" type="range" min="0" max="100" value="80">
-  </div>
   <div class="sound-controls" aria-label="Soundscape controls">
     <button id="sound-btn" type="button" aria-pressed="false">
       <span>SOUND</span>
@@ -49,9 +39,8 @@
     <label for="sound-volume">VOL</label>
     <input id="sound-volume" type="range" min="0" max="100" value="22">
   </div>
-  <div class="env-hud" id="env-hud" aria-label="Local sky and weather">
+  <div class="env-hud" id="env-hud" aria-label="Local sky phase">
     <span class="env-phase" id="env-phase">--</span>
-    <span class="env-weather" id="env-weather">syncing sky...</span>
     <span class="env-phosphor" id="env-phosphor">CYAN</span>
   </div>
 
