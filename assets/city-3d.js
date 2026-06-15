@@ -8,6 +8,14 @@ const WORLD_WIDTH = 180;
 const VIEW_HEIGHT = 82;
 const WINDOW_LABELS = ['CMU', 'MUNOZ', 'DREE', 'NOVA', 'BYTE', 'ORBIT', 'AETHER'];
 
+// Random big-tech name for a building sign (falls back if the list isn't loaded).
+function pickSign() {
+  if (typeof window !== 'undefined' && typeof window.randomTechCompany === 'function') {
+    return window.randomTechCompany();
+  }
+  return WINDOW_LABELS[(Math.random() * WINDOW_LABELS.length) | 0];
+}
+
 let renderer = null;
 let scene = null;
 let camera = null;
@@ -269,9 +277,16 @@ function drawSignTexture(record) {
   context.lineWidth = 4;
   context.strokeRect(2, 2, record.canvas.width - 4, record.canvas.height - 4);
   context.fillStyle = accent;
-  context.font = 'bold 22px monospace';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
+  // Shrink the font until the label fits the sign (tech names vary in length).
+  const maxTextWidth = record.canvas.width - 14;
+  let fontSize = 22;
+  do {
+    context.font = `bold ${fontSize}px monospace`;
+    if (context.measureText(record.text).width <= maxTextWidth) break;
+    fontSize -= 1;
+  } while (fontSize > 10);
   context.fillText(record.text, record.canvas.width / 2, record.canvas.height / 2 + 1);
   record.texture.needsUpdate = true;
 }
@@ -339,7 +354,7 @@ function buildMegaTwin(parent, item) {
   });
   addMass(parent, { x, y: h * 0.58, z: z + 0.1, w: w * 0.6, h: 3.3, d: d * 0.42, material: buildingMaterials[4] });
   addMass(parent, { x, y: h * 0.59, z: z + d * 0.24, w: w * 0.54, h: 0.38, d: 0.35, material: accentMaterials[a], castShadow: false });
-  addSign(parent, 'DREE', x, h * 0.7, z + d * 0.42, w * 0.48, 3.1, a);
+  addSign(parent, pickSign(), x, h * 0.7, z + d * 0.42, w * 0.48, 3.1, a);
 }
 
 function buildSkyGate(parent, item) {
@@ -378,7 +393,7 @@ function buildHoloTower(parent, item) {
   addMassWithFacade(parent, { x: x - w * 0.12, y: 0, z, w: w * 0.72, h, d, material: buildingMaterials[3], accentIndex: a, density });
   addMassWithFacade(parent, { x: x + w * 0.34, y: 0, z: z + 0.7, w: w * 0.34, h: h * 0.64, d: d * 0.82, material: buildingMaterials[2], accentIndex: (a + 1) % 3, density });
   addMass(parent, { x: x - w * 0.12, y: h * 0.76, z: z + d / 2 + 0.16, w: w * 0.82, h: 0.42, d: 0.26, material: accentMaterials[a], castShadow: false });
-  addSign(parent, WINDOW_LABELS[Math.abs(Math.floor(x)) % WINDOW_LABELS.length], x - w * 0.12, h * 0.62, z + d / 2 + 0.24, w * 0.68, 5.2, a);
+  addSign(parent, pickSign(), x - w * 0.12, h * 0.62, z + d / 2 + 0.24, w * 0.68, 5.2, a);
   addRoofMachinery(parent, x - w * 0.12, h, z, w * 0.65, d, a);
 }
 
@@ -420,7 +435,7 @@ function buildLattice(parent, item) {
     }
   }
   addMass(parent, { x, y: h * 0.42, z, w: w * 0.48, h: h * 0.42, d: d * 0.5, material: buildingMaterials[2] });
-  addSign(parent, 'CMU', x, h * 0.64, z + d * 0.28, w * 0.4, 3.8, a);
+  addSign(parent, pickSign(), x, h * 0.64, z + d * 0.28, w * 0.4, 3.8, a);
 }
 
 function buildCrownTower(parent, item) {
@@ -753,13 +768,10 @@ function updateEnvironment() {
   const solar = environment && typeof environment.getLocalSolar === 'function'
     ? environment.getLocalSolar()
     : { starVisibility: 1, sun: { show: false } };
-  const weather = environment && typeof environment.getWeather === 'function'
-    ? environment.getWeather()
-    : { fog: 0.08, rain: 0 };
   const night = Math.max(0, Math.min(1, solar.starVisibility ?? 1));
   ambientLight.intensity = 0.48 + night * 0.42;
   directionalLight.intensity = 1.1 - night * 0.35;
-  scene.fog.density = 0.006 + Math.max(0, weather.fog || 0) * 0.018 + Math.max(0, weather.rain || 0) * 0.004;
+  scene.fog.density = 0.006 + 0.0014 + night * 0.0024;
 }
 
 function renderFrame(now) {

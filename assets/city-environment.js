@@ -1,5 +1,5 @@
-// Visitor-local time, lightweight weather (Open-Meteo), pointer / gyro parallax,
-// and a WebGL overlay for rain · fog · neon bloom on top of the pixel city.
+// Visitor-local time, pointer / gyro parallax,
+// and a WebGL overlay for fog · neon bloom on top of the pixel city.
 (function () {
   const parallaxRoot = document.getElementById('bg-parallax');
   const fxCanvas = document.getElementById('bg-fx');
@@ -7,20 +7,6 @@
   const docEl = document.documentElement;
 
   const reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  const DEFAULT_LAT = 40.4433;
-  const DEFAULT_LON = -79.9436;
-
-  let weather = {
-    rain: 0,
-    snow: 0,
-    wind: 0.08,
-    fog: 0.08,
-    cloud: 0.2,
-    isDay: 1,
-    source: 'default',
-    mode: 'auto',
-  };
 
   let phosphorThemeName = window.PhosphorTheme ? PhosphorTheme.readSaved() : 'default';
 
@@ -60,98 +46,6 @@
   function smoothstep(edge0, edge1, x) {
     const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
     return t * t * (3 - 2 * t);
-  }
-
-  function mapWeatherCode(code, precipitation, cloudCover) {
-    let rain = 0;
-    let snow = 0;
-    let wind = 0.08;
-    let fog = 0.06 + clamp((cloudCover || 0) / 100, 0, 1) * 0.22;
-
-    const p = typeof precipitation === 'number' ? precipitation : 0;
-    if (p > 0.05) rain = clamp(p / 8, 0.15, 1);
-
-    const c = code | 0;
-    if ([45, 48].includes(c)) fog = Math.max(fog, 0.42);
-    if (c >= 51 && c <= 57) rain = Math.max(rain, 0.35);
-    if (c >= 61 && c <= 67) rain = Math.max(rain, 0.55);
-    if (c >= 80 && c <= 82) rain = Math.max(rain, 0.7);
-    if (c >= 95) rain = Math.max(rain, 0.85);
-    if (c >= 71 && c <= 77) {
-      snow = Math.max(snow, 0.45);
-      fog = Math.max(fog, 0.2);
-    }
-    if (rain > 0.4 || snow > 0.35 || cloudCover > 70) wind = 0.22;
-
-    return { rain, snow, wind, fog, cloud: clamp((cloudCover || 0) / 100, 0, 1) };
-  }
-
-  async function fetchWeather(lat, lon) {
-    const u = new URL('https://api.open-meteo.com/v1/forecast');
-    u.searchParams.set('latitude', String(lat));
-    u.searchParams.set('longitude', String(lon));
-    u.searchParams.set('current', 'weather_code,cloud_cover,precipitation,is_day');
-    const res = await fetch(u.toString(), { cache: 'no-store' });
-    if (!res.ok) throw new Error(String(res.status));
-    const data = await res.json();
-    const cur = data.current || {};
-    const mapped = mapWeatherCode(cur.weather_code, cur.precipitation, cur.cloud_cover);
-    if (weather.mode !== 'auto') return;
-    weather = {
-      ...mapped,
-      isDay: cur.is_day ? 1 : 0,
-      source: 'open-meteo',
-      mode: 'auto',
-    };
-  }
-
-  function setWeatherMode(mode = 'auto', intensity = 0.8) {
-    const nextMode = String(mode || 'auto').toLowerCase();
-    const amt = clamp(Number(intensity), 0, 1);
-    if (nextMode === 'auto') {
-      weather = { rain: 0, snow: 0, wind: 0.08, fog: 0.08, cloud: 0.2, isDay: weather.isDay, source: 'default', mode: 'auto' };
-      requestWeather();
-      return weather;
-    }
-    const base = {
-      rain: 0,
-      snow: 0,
-      wind: 0.08,
-      fog: 0.08,
-      cloud: 0.18,
-      isDay: weather.isDay,
-      source: 'manual',
-      mode: nextMode,
-    };
-    if (nextMode === 'rain') {
-      Object.assign(base, { rain: Math.max(0.18, amt), wind: 0.25 + amt * 0.45, fog: 0.18 + amt * 0.22, cloud: 0.8 });
-    } else if (nextMode === 'snow') {
-      Object.assign(base, { snow: Math.max(0.18, amt), wind: 0.14 + amt * 0.28, fog: 0.2 + amt * 0.22, cloud: 0.72 });
-    } else if (nextMode === 'wind') {
-      Object.assign(base, { wind: Math.max(0.2, amt), fog: 0.14, cloud: 0.38 });
-    } else if (nextMode === 'clear') {
-      Object.assign(base, { fog: 0.03, cloud: 0.04, wind: 0.04 });
-    }
-    weather = base;
-    return weather;
-  }
-
-  function requestWeather() {
-    if (!navigator.geolocation) {
-      fetchWeather(DEFAULT_LAT, DEFAULT_LON).catch(() => {});
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        fetchWeather(pos.coords.latitude, pos.coords.longitude).catch(() => {
-          fetchWeather(DEFAULT_LAT, DEFAULT_LON).catch(() => {});
-        });
-      },
-      () => {
-        fetchWeather(DEFAULT_LAT, DEFAULT_LON).catch(() => {});
-      },
-      { enableHighAccuracy: false, timeout: 12000, maximumAge: 600000 },
-    );
   }
 
   // --- Solar / sky (logical 640×360 space; bg.js uses same W,H) ---
@@ -502,11 +396,10 @@
 
     const rm = reducedMotion ? 0.25 : 1;
     const solar = getLocalSolar();
-    let rain = clamp(weather.rain * rm, 0, 1);
-    let snow = clamp((weather.snow || 0) * rm, 0, 1);
-    let wind = clamp(weather.wind || 0, 0, 1);
-    let fog = clamp(weather.fog * rm + (1 - solar.starVisibility) * 0.12, 0, 1);
-    if (weather.source === 'default') fog = clamp(fog + 0.05, 0, 1);
+    const rain = 0;
+    const snow = 0;
+    const wind = 0;
+    const fog = clamp(0.13 * rm + (1 - solar.starVisibility) * 0.12, 0, 1);
 
     const neonBoost = rm * (0.55 + solar.starVisibility * 0.75 + fog * 0.25);
     const neonGL = getNeonGL();
@@ -533,8 +426,6 @@
   window.CityEnvironment = {
     SKY_W,
     SKY_H,
-    getWeather: () => weather,
-    setWeatherMode,
     getLocalSolar,
     /** @returns {{ starVisibility: number, overlay: boolean }} snapshot for sky */
     applyDynamicSkyBeforeStars(ctx, solar) {
@@ -547,11 +438,9 @@
 
   if (typeof document !== 'undefined' && document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      requestWeather();
       startFxLoop();
     });
   } else {
-    requestWeather();
     startFxLoop();
   }
 

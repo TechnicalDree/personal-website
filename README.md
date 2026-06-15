@@ -19,9 +19,13 @@ Then visit <http://localhost:8000>.
   photos / contact).
 - `assets/styles.css` — full visual system: CRT scanlines, neon glow, pixel
   fonts, panels, timeline, gallery, etc.
-- `assets/bg.js` — animated pixel-city canvas (sky gradient, parallax buildings,
-  bridges, mountains, flying cars, drones, pedestrians, bots, creatures, dialogue,
-  and shooting stars).
+- `assets/bg.js` — animated pixel-city canvas (sky gradient, parallax buildings
+  with neon tech-company signs, distant mountains, harbor bridge, and shooting
+  stars).
+- `assets/city-3d.js` — orthographic 3D pixel skyline (the night city) with neon
+  tech-company building signs.
+- `assets/tech-companies.js` — the list of big tech company names shown on the
+  building signs.
 - `assets/photos/` — browser-safe JPEG photo copies used by the Photos view.
 - `assets/app.js` — view switching, typewriter prompt, uptime/clock, GitHub
   heatmap and Monkeytype chart, HIDE / SHOW minimize toggle (also `Esc` /
@@ -55,10 +59,7 @@ Then visit <http://localhost:8000>.
 - Click the left-side `[NN] LABEL` nav entries to switch terminal views.
 - Click `HIDE` (top-right) — or press `Esc` / `B` — to fade the terminal and
   reveal the full city background.
-- Use the weather controls to switch between auto, clear, rain, snow, and wind.
-- Use the sound control or terminal `sound` command to start the synth soundscape.
-- Run `arcade` in the terminal to play the mini-game; run `talk` or click the
-  exposed skyline to interact with city citizens and bots.
+- Run `arcade` in the terminal to play the mini-game.
 
 ## Edit site content (admin only)
 
