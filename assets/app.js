@@ -90,7 +90,7 @@
     projects: { tpl: 'tpl-projects', cmd: 'ls ./projects',        crumb: '~/projects' },
     about:    { tpl: 'tpl-about',    cmd: 'cat ./about.log',      crumb: '~/about' },
     log:      { tpl: 'tpl-log',      cmd: 'tail -f ./changelog',  crumb: '~/log' },
-    gallery:  { tpl: 'tpl-gallery',  cmd: 'cat ./skills.json',    crumb: '~/skills' },
+    gallery:  { tpl: 'tpl-gallery',  cmd: 'open ./photos',        crumb: '~/photos' },
     contact:  { tpl: 'tpl-contact',  cmd: 'open_comms --secure',  crumb: '~/contact' },
   };
 
@@ -99,7 +99,7 @@
     projects: ['projects', 'project', '1', '01', 'ls projects', 'ls ./projects', 'cd projects'],
     about: ['about', '2', '02', 'cat about.log', 'cat ./about.log'],
     log: ['experience', 'exp', 'log', '3', '03', 'tail -f changelog', 'tail -f ./changelog', 'tail -f ./log', 'cat ./changelog'],
-    gallery: ['skills', 'skill', 'gallery', '4', '04', 'cat skills.json', 'cat ./skills.json'],
+    gallery: ['photos', 'photo', 'gallery', '4', '04', 'open photos', 'open ./photos', 'ls photos', 'ls ./photos', 'cat photos.json'],
     contact: ['contact', '5', '05', 'open_comms', 'open_comms --secure', 'mail', 'email'],
   };
   const COMMAND_TO_VIEW = new Map(
@@ -112,7 +112,7 @@
     'projects/',
     'about.log',
     'changelog',
-    'skills.json',
+    'photos/',
     'contact',
   ];
   const VIEW_ORDER = ['home', 'projects', 'about', 'log', 'gallery', 'contact'];
@@ -121,13 +121,13 @@
     'projects | ls ./projects       browse selected work',
     'about | cat ./about.log        read operator file',
     'experience | tail -f ./log     show work history',
-    'skills | cat ./skills.json     show toolchain',
+    'photos | open ./photos         view photo roll',
     'contact | open_comms --secure  open uplink',
     'ls | pwd | clear | help        terminal utilities',
-    'whoami | neofetch | weather     system introspection',
-    'fortune | uptime | ping | stats  misc telemetry',
-    'cowsay <msg> | theme | email    easter eggs',
-    'matrix                          overdrive mode',
+    'arcade                          launch the mini-game',
+    'whoami | neofetch | fortune     system introspection',
+    'uptime | ping | stats | email   misc telemetry',
+    'cowsay <msg> | theme | matrix   easter eggs',
     'Up/Down                        command history',
     '0-5 / ← →                        jump views',
     '/ | T                          focus cmd / theme',
@@ -168,18 +168,26 @@
     } else {
       typeCmd(meta.cmd);
     }
-    // Wire quick-action buttons inside the view
+    document.dispatchEvent(new CustomEvent('adrian:view-rendered', { detail: { view: viewName } }));
+    rewireInteractiveView();
+    screen.scrollTop = 0;
+    if (options.scrollToTerm && window.matchMedia('(max-width: 900px)').matches) {
+      requestAnimationFrame(() => document.querySelector('.term')?.scrollIntoView({ block: 'start' }));
+    }
+  }
+
+  function rewireInteractiveView() {
     screen.querySelectorAll('[data-nav]').forEach(b => {
-      b.addEventListener('click', () => setView(b.getAttribute('data-nav')));
+      if (b.dataset.wiredNav === '1') return;
+      b.dataset.wiredNav = '1';
+      b.addEventListener('click', () => setView(b.getAttribute('data-nav'), { scrollToTerm: true }));
     });
     wireProjectCards();
-    // serial numbers on project cards
-    screen.querySelectorAll('.prj').forEach((el, i) => {
-      el.setAttribute('data-sn', (0xA000 + i * 37).toString(16).toUpperCase());
-    });
-    screen.scrollTop = 0;
-    document.dispatchEvent(new CustomEvent('adrian:view-rendered', { detail: { view: viewName } }));
+    wirePhotoCards();
+    assignProjectSerials();
   }
+
+  document.addEventListener('adrian:content-applied', rewireInteractiveView);
 
   let typing = null;
   const commandHistory = [];
@@ -346,6 +354,7 @@
     }, 380);
   }
 
+
   function executeCommand(rawCommand) {
     const input = rawCommand.trim();
     const normalized = normalizeCommand(input);
@@ -371,7 +380,7 @@
         'adrian munoz (@a3rean)',
         'bs+ms electrical & computer engineering @ cmu',
         'software engineer · full-stack · systems · robotics',
-        'graduated may 2026 · gpa 3.87',
+        'graduating may 2026 · gpa 3.43',
       ]);
     } else if (normalized === 'neofetch') {
       renderTerminalOutput(input, [
@@ -383,8 +392,9 @@
         '       shell: terminal-ui',
         '       stack: python · c++ · java · ts · react · aws',
       ]);
-    } else if (normalized === 'weather') {
-      renderTerminalOutput(input, getWeatherLines());
+    } else if (normalized === 'arcade' || normalized === 'minigame' || normalized === 'neon runner') {
+      openArcade();
+      renderTerminalOutput(input, ['arcade cabinet opened', '// arrow keys or A/D to move · collect cyan packets']);
     } else if (normalized === 'fortune' || normalized === 'motd') {
       const quote = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
       renderTerminalOutput(input, [`"${quote}"`, '// adrian-os fortune daemon']);
@@ -489,7 +499,7 @@
       'clear',
       'whoami',
       'neofetch',
-      'weather',
+      'arcade',
       'fortune',
       'uptime',
       'ping',
@@ -513,7 +523,7 @@
   }
 
   navBtns.forEach(b => {
-    b.addEventListener('click', () => setView(b.dataset.view));
+    b.addEventListener('click', () => setView(b.dataset.view, { scrollToTerm: true }));
   });
 
   cmd.setAttribute('contenteditable', 'true');
@@ -574,6 +584,7 @@
   function setMin(v) {
     minimized = v;
     stage.classList.toggle('minimized', v);
+    document.body.classList.toggle('skyline-mode', v);
     minBtn.classList.toggle('is-min', v);
     minBtn.querySelector('.mb-label').textContent = v ? 'SHOW' : 'HIDE';
     minBtn.title = v ? 'Restore terminal' : 'Hide terminal — show city';
@@ -581,6 +592,7 @@
   minBtn.addEventListener('click', () => setMin(!minimized));
 
   let projectModal = null;
+  let projectModalCleanup = null;
   let bootActive = false;
   const bootScreen = document.getElementById('boot-screen');
   const bootLog = document.getElementById('boot-log');
@@ -650,6 +662,8 @@
 
   // --- Project detail modal ---
   function closeProjectModal() {
+    if (typeof projectModalCleanup === 'function') projectModalCleanup();
+    projectModalCleanup = null;
     if (projectModal) {
       projectModal.remove();
       projectModal = null;
@@ -660,6 +674,7 @@
     closeProjectModal();
     const title = card.querySelector('h3')?.textContent?.trim() || 'PROJECT';
     const desc = card.querySelector('p')?.textContent?.trim() || '';
+    const date = card.querySelector('.prj-meta span:first-child')?.textContent?.trim() || '';
     const status = card.querySelector('.tag')?.textContent?.trim() || '';
     const chips = [...card.querySelectorAll('.prj-chips span')].map((el) => el.textContent.trim());
     const sn = card.getAttribute('data-sn') || '0000';
@@ -683,6 +698,7 @@
           <button type="button" class="prj-modal-close" aria-label="Close">ESC</button>
         </div>
         <div class="prj-modal-body">
+          ${date ? `<div class="prj-modal-date">${escapeHtml(date)}</div>` : ''}
           <p>${escapeHtml(desc)}</p>
           <div class="prj-modal-chips">${chips.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>
           <div class="prj-modal-actions">${actionBtns}</div>
@@ -697,8 +713,194 @@
     document.body.appendChild(projectModal);
   }
 
+  function openPhotoModal(card) {
+    closeProjectModal();
+    const src = card.getAttribute('data-src') || card.querySelector('img')?.getAttribute('src') || '';
+    const caption = card.getAttribute('data-caption') || card.querySelector('span')?.textContent?.trim() || 'PHOTO';
+    if (!src) return;
+    projectModal = document.createElement('div');
+    projectModal.className = 'prj-modal-backdrop photo-modal-backdrop';
+    projectModal.innerHTML = `
+      <figure class="photo-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(caption)}">
+        <button type="button" class="prj-modal-close photo-modal-close" aria-label="Close">ESC</button>
+        <img src="${escapeHtml(src)}" alt="${escapeHtml(caption)}">
+        <figcaption>${escapeHtml(caption)}</figcaption>
+      </figure>
+    `;
+    projectModal.addEventListener('click', (ev) => {
+      if (ev.target === projectModal) closeProjectModal();
+    });
+    projectModal.querySelector('.photo-modal-close')?.addEventListener('click', closeProjectModal);
+    document.body.appendChild(projectModal);
+  }
+
+  function openArcade() {
+    closeProjectModal();
+    projectModal = document.createElement('div');
+    projectModal.className = 'prj-modal-backdrop arcade-backdrop';
+    projectModal.innerHTML = `
+      <section class="arcade-cabinet" role="dialog" aria-modal="true" aria-label="Neon Packet Runner">
+        <div class="arcade-head">
+          <h3>NEON PACKET RUNNER</h3>
+          <button type="button" class="prj-modal-close" aria-label="Close">ESC</button>
+        </div>
+        <canvas class="arcade-canvas" width="320" height="180"></canvas>
+        <div class="arcade-hud">
+          <span id="arcade-score">SCORE 000</span>
+          <span id="arcade-lives">LIVES 3</span>
+          <button type="button" id="arcade-restart">RESTART</button>
+        </div>
+        <p>ARROWS / A-D MOVE · COLLECT CYAN PACKETS · DODGE MAGENTA STATIC</p>
+      </section>
+    `;
+    projectModal.addEventListener('click', (ev) => {
+      if (ev.target === projectModal) closeProjectModal();
+    });
+    projectModal.querySelector('.prj-modal-close')?.addEventListener('click', closeProjectModal);
+    document.body.appendChild(projectModal);
+
+    const canvas = projectModal.querySelector('.arcade-canvas');
+    const ctx2 = canvas.getContext('2d');
+    const scoreEl = projectModal.querySelector('#arcade-score');
+    const livesEl = projectModal.querySelector('#arcade-lives');
+    const restart = projectModal.querySelector('#arcade-restart');
+    const keys = new Set();
+    let raf = 0;
+    let state;
+
+    function reset() {
+      state = { x: 150, tick: 0, score: 0, lives: 3, speed: 1.25, objects: [], gameOver: false };
+    }
+
+    function spawnObject() {
+      const packet = Math.random() < 0.58;
+      state.objects.push({
+        x: 12 + Math.random() * 296,
+        y: -12,
+        s: packet ? 7 : 9,
+        vy: state.speed + Math.random() * 1.2,
+        packet,
+      });
+    }
+
+    function rectHit(a, b) {
+      return a.x < b.x + b.s && a.x + a.w > b.x && a.y < b.y + b.s && a.y + a.h > b.y;
+    }
+
+    function drawPixelShip(x, y) {
+      ctx2.fillStyle = '#36f5ff';
+      ctx2.fillRect(x + 8, y, 8, 4);
+      ctx2.fillRect(x + 4, y + 4, 16, 5);
+      ctx2.fillRect(x, y + 9, 24, 4);
+      ctx2.fillStyle = '#ff2fb3';
+      ctx2.fillRect(x + 2, y + 13, 6, 2);
+      ctx2.fillRect(x + 16, y + 13, 6, 2);
+      ctx2.fillStyle = '#f6ff7a';
+      ctx2.fillRect(x + 11, y + 4, 3, 3);
+    }
+
+    function drawObject(o) {
+      if (o.packet) {
+        ctx2.fillStyle = '#36f5ff';
+        ctx2.fillRect(o.x, o.y, o.s, o.s);
+        ctx2.fillStyle = '#e8fbff';
+        ctx2.fillRect(o.x + 2, o.y + 2, o.s - 4, 1);
+      } else {
+        ctx2.fillStyle = '#ff2fb3';
+        ctx2.fillRect(o.x, o.y, o.s, o.s);
+        ctx2.fillStyle = '#020914';
+        ctx2.fillRect(o.x + 2, o.y + 2, o.s - 4, o.s - 4);
+        ctx2.fillStyle = '#f6ff7a';
+        ctx2.fillRect(o.x + 3, o.y + 3, 2, 2);
+      }
+    }
+
+    function frameArcade() {
+      raf = requestAnimationFrame(frameArcade);
+      state.tick += 1;
+      if (!state.gameOver) {
+        const left = keys.has('ArrowLeft') || keys.has('a') || keys.has('A');
+        const right = keys.has('ArrowRight') || keys.has('d') || keys.has('D');
+        if (left) state.x -= 3.4;
+        if (right) state.x += 3.4;
+        state.x = Math.max(4, Math.min(292, state.x));
+        if (state.tick % Math.max(18, 42 - Math.floor(state.score / 20)) === 0) spawnObject();
+        state.speed = Math.min(3.6, 1.25 + state.score / 90);
+      }
+
+      ctx2.fillStyle = '#020914';
+      ctx2.fillRect(0, 0, canvas.width, canvas.height);
+      ctx2.fillStyle = '#082d46';
+      for (let x = 0; x < canvas.width; x += 16) ctx2.fillRect(x, 0, 1, canvas.height);
+      for (let y = (state.tick % 16); y < canvas.height; y += 16) ctx2.fillRect(0, y, canvas.width, 1);
+
+      const player = { x: state.x, y: 152, w: 24, h: 16 };
+      if (!state.gameOver) {
+        for (let i = state.objects.length - 1; i >= 0; i -= 1) {
+          const o = state.objects[i];
+          o.y += o.vy;
+          drawObject(o);
+          if (rectHit(player, o)) {
+            state.objects.splice(i, 1);
+            if (o.packet) {
+              state.score += 5;
+            } else {
+              state.lives -= 1;
+              if (state.lives <= 0) state.gameOver = true;
+            }
+          } else if (o.y > canvas.height + 12) {
+            state.objects.splice(i, 1);
+          }
+        }
+      } else {
+        state.objects.forEach(drawObject);
+      }
+
+      drawPixelShip(player.x, player.y);
+      scoreEl.textContent = `SCORE ${String(state.score).padStart(3, '0')}`;
+      livesEl.textContent = `LIVES ${Math.max(0, state.lives)}`;
+      if (state.gameOver) {
+        ctx2.fillStyle = 'rgba(2,9,20,0.72)';
+        ctx2.fillRect(0, 0, canvas.width, canvas.height);
+        ctx2.fillStyle = '#f6ff7a';
+        ctx2.font = '16px "Press Start 2P", monospace';
+        ctx2.fillText('GAME OVER', 70, 82);
+        ctx2.font = '8px "Press Start 2P", monospace';
+        ctx2.fillText('PRESS RESTART', 94, 104);
+      }
+    }
+
+    function onKey(ev) {
+      if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D'].includes(ev.key)) {
+        ev.preventDefault();
+        keys.add(ev.key);
+      }
+    }
+    function onKeyUp(ev) {
+      keys.delete(ev.key);
+    }
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKeyUp);
+    restart.addEventListener('click', reset);
+    projectModalCleanup = () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+    reset();
+    frameArcade();
+  }
+
+  function assignProjectSerials() {
+    screen.querySelectorAll('.prj').forEach((el, i) => {
+      el.setAttribute('data-sn', (0xA000 + i * 37).toString(16).toUpperCase());
+    });
+  }
+
   function wireProjectCards() {
     screen.querySelectorAll('.prj').forEach((card) => {
+      if (card.dataset.wiredCard === '1') return;
+      card.dataset.wiredCard = '1';
       card.addEventListener('click', () => openProjectModal(card));
       card.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -706,6 +908,14 @@
           openProjectModal(card);
         }
       });
+    });
+  }
+
+  function wirePhotoCards() {
+    screen.querySelectorAll('.photo-card').forEach((card) => {
+      if (card.dataset.wiredPhoto === '1') return;
+      card.dataset.wiredPhoto = '1';
+      card.addEventListener('click', () => openPhotoModal(card));
     });
   }
 
@@ -736,9 +946,8 @@
   setInterval(updateSysBars, 2200);
   updateSysBars();
 
-  // --- Environment HUD (sky phase + weather) ---
+  // --- Environment HUD (sky phase) ---
   const envPhase = document.getElementById('env-phase');
-  const envWeather = document.getElementById('env-weather');
   const envPhosphor = document.getElementById('env-phosphor');
 
   function phaseLabel(hour) {
@@ -748,32 +957,10 @@
     return 'NIGHT';
   }
 
-  function weatherLabel(w) {
-    if (!w) return 'sky sync pending';
-    if (w.rain > 0.55) return 'RAIN // heavy precipitation';
-    if (w.rain > 0.2) return 'RAIN // light showers';
-    if (w.fog > 0.35) return 'FOG // low visibility';
-    if (w.cloud > 0.55) return 'CLOUDY // overcast';
-    return 'CLEAR // neon horizon';
-  }
-
-  function getWeatherLines() {
-    const w = window.CityEnvironment?.getWeather?.();
-    const solar = window.CityEnvironment?.getLocalSolar?.() || {};
-    const phase = phaseLabel(solar.hour || new Date().getHours());
-    return [
-      `phase: ${phase.toLowerCase()}`,
-      `condition: ${weatherLabel(w)}`,
-      `rain: ${w ? Math.round(w.rain * 100) : 0}% · fog: ${w ? Math.round(w.fog * 100) : 0}%`,
-      `source: ${w?.source || 'local estimate'}`,
-    ];
-  }
-
   function updateEnvHud() {
     const solar = window.CityEnvironment?.getLocalSolar?.() || { hour: new Date().getHours() };
     const theme = document.body.dataset.theme || 'default';
     if (envPhase) envPhase.textContent = phaseLabel(solar.hour);
-    if (envWeather) envWeather.textContent = weatherLabel(window.CityEnvironment?.getWeather?.());
     if (envPhosphor) envPhosphor.textContent = THEME_LABELS[theme] || 'CYAN';
   }
   setInterval(updateEnvHud, 5000);
@@ -802,7 +989,7 @@
     const speedInput = document.getElementById('city-speed');
     if (speedInput) {
       speedInput.value = '2.5';
-      speedInput.dispatchEvent(new Event('input', { bubbles: true }));
+      speedInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
 
@@ -846,7 +1033,6 @@
     'Mounting /home/adrian ...... OK',
     'Loading pixel skyline renderer',
     'Syncing github telemetry ..... OK',
-    'Fetching open-meteo weather .. OK',
     'Starting terminal shell ...... OK',
     '',
     'Welcome, operator.',

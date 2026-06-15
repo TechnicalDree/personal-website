@@ -1,5 +1,5 @@
-// Visitor-local time, lightweight weather (Open-Meteo), pointer / gyro parallax,
-// and a WebGL overlay for rain · fog · neon bloom on top of the pixel city.
+// Visitor-local time, pointer / gyro parallax,
+// and a WebGL overlay for fog · neon bloom on top of the pixel city.
 (function () {
   const parallaxRoot = document.getElementById('bg-parallax');
   const fxCanvas = document.getElementById('bg-fx');
@@ -7,17 +7,6 @@
   const docEl = document.documentElement;
 
   const reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  const DEFAULT_LAT = 40.4433;
-  const DEFAULT_LON = -79.9436;
-
-  let weather = {
-    rain: 0,
-    fog: 0.08,
-    cloud: 0.2,
-    isDay: 1,
-    source: 'default',
-  };
 
   let phosphorThemeName = window.PhosphorTheme ? PhosphorTheme.readSaved() : 'default';
 
@@ -57,62 +46,6 @@
   function smoothstep(edge0, edge1, x) {
     const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
     return t * t * (3 - 2 * t);
-  }
-
-  function mapWeatherCode(code, precipitation, cloudCover) {
-    let rain = 0;
-    let fog = 0.06 + clamp((cloudCover || 0) / 100, 0, 1) * 0.22;
-
-    const p = typeof precipitation === 'number' ? precipitation : 0;
-    if (p > 0.05) rain = clamp(p / 8, 0.15, 1);
-
-    const c = code | 0;
-    if ([45, 48].includes(c)) fog = Math.max(fog, 0.42);
-    if (c >= 51 && c <= 57) rain = Math.max(rain, 0.35);
-    if (c >= 61 && c <= 67) rain = Math.max(rain, 0.55);
-    if (c >= 80 && c <= 82) rain = Math.max(rain, 0.7);
-    if (c >= 95) rain = Math.max(rain, 0.85);
-    if (c >= 71 && c <= 77) {
-      rain = Math.max(rain, 0.25);
-      fog = Math.max(fog, 0.2);
-    }
-
-    return { rain, fog, cloud: clamp((cloudCover || 0) / 100, 0, 1) };
-  }
-
-  async function fetchWeather(lat, lon) {
-    const u = new URL('https://api.open-meteo.com/v1/forecast');
-    u.searchParams.set('latitude', String(lat));
-    u.searchParams.set('longitude', String(lon));
-    u.searchParams.set('current', 'weather_code,cloud_cover,precipitation,is_day');
-    const res = await fetch(u.toString(), { cache: 'no-store' });
-    if (!res.ok) throw new Error(String(res.status));
-    const data = await res.json();
-    const cur = data.current || {};
-    const mapped = mapWeatherCode(cur.weather_code, cur.precipitation, cur.cloud_cover);
-    weather = {
-      ...mapped,
-      isDay: cur.is_day ? 1 : 0,
-      source: 'open-meteo',
-    };
-  }
-
-  function requestWeather() {
-    if (!navigator.geolocation) {
-      fetchWeather(DEFAULT_LAT, DEFAULT_LON).catch(() => {});
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        fetchWeather(pos.coords.latitude, pos.coords.longitude).catch(() => {
-          fetchWeather(DEFAULT_LAT, DEFAULT_LON).catch(() => {});
-        });
-      },
-      () => {
-        fetchWeather(DEFAULT_LAT, DEFAULT_LON).catch(() => {});
-      },
-      { enableHighAccuracy: false, timeout: 12000, maximumAge: 600000 },
-    );
   }
 
   // --- Solar / sky (logical 640×360 space; bg.js uses same W,H) ---
@@ -339,6 +272,8 @@
       uniform vec2 u_resolution;
       uniform float u_time;
       uniform float u_rain;
+      uniform float u_snow;
+      uniform float u_wind;
       uniform float u_fog;
       uniform float u_neon;
       uniform float u_isDay;
@@ -362,7 +297,7 @@
 
         if (u_rain > 0.002) {
           float t = u_time * (1.0 + u_rain);
-          float wind = sin(uv.y * 3.1 + t * 0.4) * 0.04;
+          float wind = sin(uv.y * 3.1 + t * 0.4) * (0.04 + u_wind * 0.08);
           vec2 p = vec2(frag.x * (0.06 + u_rain * 0.04) + wind * 40.0, frag.y * 0.11 - t * 2.4);
           vec2 id = floor(p);
           vec2 gv = fract(p) - 0.5;
@@ -372,6 +307,18 @@
           float groundMask = smoothstep(0.05, 0.38, uv.y);
           alpha += drop * streak * 0.55 * groundMask;
           col = mix(col, vec3(0.7, 0.85, 1.0), 0.35);
+        }
+
+        if (u_snow > 0.002) {
+          float st = u_time * (0.55 + u_snow);
+          vec2 sp = vec2(frag.x * 0.035 + st * (8.0 + u_wind * 46.0), frag.y * 0.045 - st * 7.0);
+          vec2 sid = floor(sp);
+          vec2 sg = fract(sp) - 0.5;
+          float sn = hash(sid);
+          float flake = smoothstep(0.13, 0.01, length(sg)) * step(0.68, sn) * u_snow;
+          float groundMask = smoothstep(0.0, 0.28, uv.y);
+          alpha += flake * 0.58 * groundMask;
+          col = mix(col, vec3(0.82, 0.94, 1.0), 0.5);
         }
 
         float pulse = 0.5 + 0.5 * sin(u_time * 0.8);
@@ -412,6 +359,8 @@
       res: gl.getUniformLocation(program, 'u_resolution'),
       time: gl.getUniformLocation(program, 'u_time'),
       rain: gl.getUniformLocation(program, 'u_rain'),
+      snow: gl.getUniformLocation(program, 'u_snow'),
+      wind: gl.getUniformLocation(program, 'u_wind'),
       fog: gl.getUniformLocation(program, 'u_fog'),
       neon: gl.getUniformLocation(program, 'u_neon'),
       isDay: gl.getUniformLocation(program, 'u_isDay'),
@@ -447,9 +396,10 @@
 
     const rm = reducedMotion ? 0.25 : 1;
     const solar = getLocalSolar();
-    let rain = clamp(weather.rain * rm, 0, 1);
-    let fog = clamp(weather.fog * rm + (1 - solar.starVisibility) * 0.12, 0, 1);
-    if (weather.source === 'default') fog = clamp(fog + 0.05, 0, 1);
+    const rain = 0;
+    const snow = 0;
+    const wind = 0;
+    const fog = clamp(0.13 * rm + (1 - solar.starVisibility) * 0.12, 0, 1);
 
     const neonBoost = rm * (0.55 + solar.starVisibility * 0.75 + fog * 0.25);
     const neonGL = getNeonGL();
@@ -459,6 +409,8 @@
     gl.uniform2f(locs.res, fxCanvas.width, fxCanvas.height);
     gl.uniform1f(locs.time, (now - startFx) / 1000);
     gl.uniform1f(locs.rain, rain);
+    gl.uniform1f(locs.snow, snow);
+    gl.uniform1f(locs.wind, wind);
     gl.uniform1f(locs.fog, fog);
     gl.uniform1f(locs.neon, neonBoost);
     gl.uniform1f(locs.isDay, solar.sun.show ? 1 : 0);
@@ -474,7 +426,6 @@
   window.CityEnvironment = {
     SKY_W,
     SKY_H,
-    getWeather: () => weather,
     getLocalSolar,
     /** @returns {{ starVisibility: number, overlay: boolean }} snapshot for sky */
     applyDynamicSkyBeforeStars(ctx, solar) {
@@ -487,11 +438,9 @@
 
   if (typeof document !== 'undefined' && document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      requestWeather();
       startFxLoop();
     });
   } else {
-    requestWeather();
     startFxLoop();
   }
 

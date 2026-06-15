@@ -102,6 +102,16 @@
     el.dataset.editMode = mode;
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[ch]));
+  }
+
   function applyHome(root) {
     applyField(root, '.glitch', 'home.headlineHtml', 'html');
     const glitch = root.querySelector('.glitch');
@@ -122,27 +132,37 @@
 
   function applyProjects(root) {
     applyField(root, '.view-projects .tag.tag-mag', 'projects.countLabel', 'text');
-    const cards = root.querySelectorAll('.view-projects .prj');
-    content.projects.items.forEach((item, index) => {
-      const card = cards[index];
-      if (!card) return;
-      const base = `projects.items.${index}`;
-      applyField(root, `.view-projects .prj:nth-child(${index + 1}) .prj-meta .tag`, `${base}.status`, 'text');
-      applyField(root, `.view-projects .prj:nth-child(${index + 1}) h3`, `${base}.title`, 'text');
-      applyField(root, `.view-projects .prj:nth-child(${index + 1}) p`, `${base}.description`, 'text');
-      const chips = card.querySelector('.prj-chips');
-      if (chips && Array.isArray(item.chips)) {
-        chips.innerHTML = item.chips.map((chip) => `<span>${chip}</span>`).join('');
-        chips.dataset.edit = `${base}.chips`;
-        chips.dataset.editMode = 'chips';
-      }
-    });
+    const grid = root.querySelector('.view-projects .prj-grid');
+    if (!grid || !Array.isArray(content.projects?.items)) return;
+    grid.innerHTML = content.projects.items.map((item, index) => renderProjectCard(item, index)).join('');
+  }
+
+  function optionalAttr(name, value) {
+    return value ? ` ${name}="${escapeHtml(value)}"` : '';
+  }
+
+  function renderProjectCard(item, index) {
+    const base = `projects.items.${index}`;
+    const chips = Array.isArray(item.chips) ? item.chips : [];
+    return `
+      <article class="prj" tabindex="0"${optionalAttr('data-github', item.github)}${optionalAttr('data-link', item.link)}${optionalAttr('data-link-label', item.linkLabel)}${optionalAttr('data-link-2', item.link2)}${optionalAttr('data-link-2-label', item.link2Label)}>
+        <div class="prj-thumb" data-thumb="${escapeHtml(item.thumb || 'database')}"></div>
+        <div class="prj-body">
+          <div class="prj-meta">
+            <span data-edit="${base}.date" data-edit-mode="text">${escapeHtml(item.date || 'DATE TBD')}</span>
+            <span class="tag tag-yel" data-edit="${base}.status" data-edit-mode="text">${escapeHtml(item.status || 'PROJECT')}</span>
+          </div>
+          <h3 data-edit="${base}.title" data-edit-mode="text">${escapeHtml(item.title || 'PROJECT')}</h3>
+          <p data-edit="${base}.description" data-edit-mode="text">${escapeHtml(item.description || '')}</p>
+          <div class="prj-chips" data-edit="${base}.chips" data-edit-mode="chips">${chips.map((chip) => `<span>${escapeHtml(chip)}</span>`).join('')}</div>
+        </div>
+      </article>
+    `;
   }
 
   function applyAbout(root) {
     applyField(root, '.view-about .lede', 'about.ledeHtml', 'html');
     applyField(root, '.view-about .body', 'about.bodyHtml', 'html');
-    applyField(root, '.view-about .quote p', 'about.quote', 'text');
     const bullets = root.querySelectorAll('.view-about .bullet li');
     content.about.signals.forEach((line, index) => {
       const li = bullets[index];
@@ -180,34 +200,33 @@
   }
 
   function applyExperience(root) {
-    const items = root.querySelectorAll('.view-log .timeline li');
-    content.experience.items.forEach((item, index) => {
-      const li = items[index];
-      if (!li) return;
+    const list = root.querySelector('.view-log .timeline');
+    if (!list || !Array.isArray(content.experience?.items)) return;
+    list.innerHTML = content.experience.items.map((item, index) => {
       const base = `experience.items.${index}`;
-      const ts = li.querySelector('.ts');
-      const tag = li.querySelector('.ev');
-      const body = li.querySelector('.ev-body');
-      if (ts) {
-        ts.textContent = item.dates;
-        ts.dataset.edit = `${base}.dates`;
-        ts.dataset.editMode = 'text';
-      }
-      if (tag) {
-        tag.textContent = item.tag;
-        tag.dataset.edit = `${base}.tag`;
-        tag.dataset.editMode = 'text';
-      }
-      if (body) {
-        body.innerHTML = item.bodyHtml;
-        body.dataset.edit = `${base}.bodyHtml`;
-        body.dataset.editMode = 'html';
-      }
-    });
+      return `
+        <li>
+          <span class="ts" data-edit="${base}.dates" data-edit-mode="text">${escapeHtml(item.dates || '')}</span>
+          <span class="ev ev-ship" data-edit="${base}.tag" data-edit-mode="text">${escapeHtml(item.tag || '')}</span>
+          <div class="ev-body" data-edit="${base}.bodyHtml" data-edit-mode="html">${item.bodyHtml || ''}</div>
+        </li>
+      `;
+    }).join('');
   }
 
-  function applySkills(root) {
-    applyField(root, '.view-gallery .caption', 'skills.caption', 'text');
+  function applyPhotos(root) {
+    applyField(root, '.view-gallery .caption', 'photos.caption', 'text');
+    const grid = root.querySelector('.view-gallery .photo-grid');
+    if (!grid || !Array.isArray(content.photos?.items)) return;
+    grid.innerHTML = content.photos.items.map((item, index) => {
+      const base = `photos.items.${index}`;
+      return `
+        <button class="photo-card" type="button" data-src="${escapeHtml(item.src || '')}" data-caption="${escapeHtml(item.caption || `PHOTO ${index + 1}`)}">
+          <img src="${escapeHtml(item.src || '')}" alt="${escapeHtml(item.alt || `Personal photo ${index + 1}`)}" loading="lazy" decoding="async">
+          <span data-edit="${base}.caption" data-edit-mode="text">${escapeHtml(item.caption || `PHOTO ${index + 1}`)}</span>
+        </button>
+      `;
+    }).join('');
   }
 
   function applyContact(root) {
@@ -248,9 +267,10 @@
     applyProjects(screen);
     applyAbout(screen);
     applyExperience(screen);
-    applySkills(screen);
+    applyPhotos(screen);
     applyContact(screen);
     if (adminActive) enableEditMode(screen);
+    document.dispatchEvent(new CustomEvent('adrian:content-applied', { detail: { root: screen } }));
   }
 
   function collectEditableValues(root = document) {
