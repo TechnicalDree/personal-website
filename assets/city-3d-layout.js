@@ -48,49 +48,75 @@ export function parseCitySeed(search, fallback) {
   return Number(fallback()) >>> 0;
 }
 
+const TAU = Math.PI * 2;
+
+// The camera looks at the skyline from +z toward 0, so HIGHER z is closer to the
+// camera (front) and LOWER/negative z recedes into the background.
+// One sparse strip sits in FRONT of the road; the road is a clear lane; the
+// remaining strips recede behind it, shrinking with depth.
+export const ROAD_Z = 17;
+export const ROAD_DEPTH = 12;            // clear lane spans z in [ROAD_Z ± ROAD_DEPTH/2] = [11, 23]
+export const CITY_PERIOD = 180;          // must equal WORLD_WIDTH in city-3d.js for seamless tiling
+
+const STRIPS = [
+  { z: 36, scale: 1.00, landmarks: 3, supports: 7 },   // front strip (in front of the road)
+  { z: 0, scale: 1.00, landmarks: 3, supports: 9 },     // first strip behind the road
+  { z: -16, scale: 0.82, landmarks: 1, supports: 11 },  // background strips, receding + shrinking
+  { z: -32, scale: 0.66, landmarks: 0, supports: 13 },
+  { z: -48, scale: 0.52, landmarks: 0, supports: 15 },
+];
+
 export function createCityLayout(seed) {
   const rng = createRng(seed);
-  const landmarkCount = 5 + Math.floor(rng() * 3);
-  const landmarkKinds = shuffle(rng, LANDMARK_KINDS).slice(0, landmarkCount);
-  const landmarkStep = 144 / Math.max(1, landmarkCount - 1);
-  const landmarks = landmarkKinds.map((kind, index) => {
-    const width = range(rng, 14, 22);
-    return {
-      id: `landmark-${index}`,
-      kind,
-      x: -72 + index * landmarkStep + range(rng, -3.2, 3.2),
-      z: range(rng, -7, 5),
-      width,
-      depth: range(rng, 8, 15),
-      height: range(rng, 34, 58),
-      accentIndex: index % 3,
-      windowDensity: range(rng, 0.56, 0.78),
-      phase: range(rng, 0, Math.PI * 2),
-    };
-  });
-
-  const supportCount = 28 + Math.floor(rng() * 7);
-  const supportStep = 164 / Math.max(1, supportCount - 1);
+  const landmarks = [];
   const supporting = [];
-  for (let index = 0; index < supportCount; index++) {
-    const width = Math.min(range(rng, 4.2, 7.2), supportStep * 1.28);
-    supporting.push({
-      id: `support-${index}`,
-      kind: SUPPORT_KINDS[Math.floor(rng() * SUPPORT_KINDS.length)],
-      x: -82 + index * supportStep + range(rng, -0.7, 0.7),
-      z: range(rng, 4, 24),
-      width,
-      depth: range(rng, 4, 8),
-      height: range(rng, 15, 36),
-      accentIndex: Math.floor(rng() * 3),
-      windowDensity: range(rng, 0.38, 0.62),
-      phase: range(rng, 0, Math.PI * 2),
-    });
-  }
+
+  STRIPS.forEach((strip, stripIndex) => {
+    // Depths are clamped so no building face intrudes into the road lane.
+    const zJitter = stripIndex === 0 ? 2 : 2.6;
+
+    if (strip.landmarks > 0) {
+      const kinds = shuffle(rng, LANDMARK_KINDS).slice(0, strip.landmarks);
+      const step = CITY_PERIOD / strip.landmarks;
+      kinds.forEach((kind, index) => {
+        landmarks.push({
+          id: `lm-${stripIndex}-${index}`,
+          kind,
+          strip: stripIndex,
+          x: -CITY_PERIOD / 2 + (index + 0.5) * step + range(rng, -step * 0.16, step * 0.16),
+          z: strip.z + range(rng, -zJitter, zJitter),
+          width: range(rng, 14, 22) * (0.62 + strip.scale * 0.38),
+          depth: range(rng, 7, 12) * strip.scale,
+          height: range(rng, 34, 58) * strip.scale,
+          accentIndex: index % 3,
+          windowDensity: range(rng, 0.56, 0.78),
+          phase: range(rng, 0, TAU),
+        });
+      });
+    }
+
+    const supportStep = CITY_PERIOD / strip.supports;
+    for (let index = 0; index < strip.supports; index++) {
+      supporting.push({
+        id: `sp-${stripIndex}-${index}`,
+        kind: SUPPORT_KINDS[Math.floor(rng() * SUPPORT_KINDS.length)],
+        strip: stripIndex,
+        x: -CITY_PERIOD / 2 + (index + 0.5) * supportStep + range(rng, -supportStep * 0.3, supportStep * 0.3),
+        z: strip.z + range(rng, -zJitter, zJitter),
+        width: Math.min(range(rng, 4.2, 7.2), supportStep * 0.9) * (0.72 + strip.scale * 0.28),
+        depth: range(rng, 4, 7) * strip.scale,
+        height: range(rng, 15, 36) * strip.scale,
+        accentIndex: Math.floor(rng() * 3),
+        windowDensity: range(rng, 0.38, 0.62),
+        phase: range(rng, 0, TAU),
+      });
+    }
+  });
 
   return {
     seed: Number(seed) >>> 0,
     landmarks,
     supporting,
+    road: { z: ROAD_Z, depth: ROAD_DEPTH, period: CITY_PERIOD },
   };
 }

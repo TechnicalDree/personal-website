@@ -227,7 +227,7 @@ body.theme-mono .theme-dot { background: #c8d0d8; box-shadow: 0 0 8px #c8d0d8; }
 }
 
 .env-hud {
-  position: fixed; top: 404px; right: 14px; z-index: 9999;
+  position: fixed; top: 140px; right: 14px; z-index: 9999;
   width: 190px;
   display: flex; flex-direction: column; gap: 4px;
   background: rgba(3, 13, 26, 0.84);
@@ -1145,6 +1145,8 @@ b { color: var(--yellow); font-weight: normal; }
 .kvv.ok { color: var(--yellow); }
 
 .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 18px; }
+.home-social { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 18px; }
+.home-social .slot { width: 46px; }
 .btn {
   font-family: 'Press Start 2P', monospace;
   font-size: 11px; letter-spacing: 1.5px;
