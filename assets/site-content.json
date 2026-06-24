@@ -295,16 +295,6 @@
         "dates": "May 2026",
         "tag": "CMU",
         "bodyHtml": "<b>Carnegie Mellon University</b> - BS+MS in Electrical &amp; Computer Engineering, Minor in Robotics, GPA 3.43/4.00."
-      },
-      {
-        "dates": "2024 - 2026",
-        "tag": "BUILD",
-        "bodyHtml": "Built project work across CUDA computer vision, HTTP/UDP networking, browser privacy, cryptographic content authentication, XR controllers, ML recommendation systems, robotics swarms, embedded systems, and database internals."
-      },
-      {
-        "dates": "TOOLCHAIN",
-        "tag": "STACK",
-        "bodyHtml": "<b>Languages</b>: Python, C, C++, Java, JavaScript, TypeScript, PostgreSQL, R, HTML, CSS, MATLAB. <b>Frameworks</b>: React, Spring, REST APIs, NumPy, PyTorch, ROS2, Node.js, Express.js, AWS, Django, TensorFlow, Flask."
       }
     ]
   },

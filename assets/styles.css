@@ -2013,12 +2013,26 @@ a.slot:focus-visible {
   font-size: 11px;
 }
 
-/* Small screens */
+/* ===== RESPONSIVE / SMALL SCREENS =====
+   The desktop 3D-tilt two-column layout is left untouched above 900px.
+   Below it, the unit collapses into a single stacked column
+   (profile + nav on top, terminal below) and the page becomes scrollable. */
+
+/* Tablets & smaller: stack the layout and let the page scroll */
 @media (max-width: 900px) {
-  .unit { grid-template-columns: 1fr; height: auto; transform: none; filter: none; }
-  html, body { overflow: auto; }
-  .stage { height: auto; min-height: 100vh; }
-  .term { min-height: 80vh; }
+  html, body { overflow: auto; overflow-x: hidden; height: auto; }
+  .stage { height: auto; min-height: 100vh; padding: 14px; }
+  .unit {
+    grid-template-columns: 1fr;
+    width: 100%;
+    height: auto;
+    gap: 14px;
+    transform: none;
+    filter: none;
+  }
+  .term { min-height: 78vh; }
+
+  /* Home dashboards and content grids collapse to a single column */
   .panels { grid-template-columns: 1fr; }
   .gh-browser { grid-template-columns: 1fr; }
   .gh-years { flex-direction: row; flex-wrap: wrap; }
@@ -2027,5 +2041,63 @@ a.slot:focus-visible {
   .prj-grid, .about-grid, .contact-grid { grid-template-columns: 1fr; }
   .about-portrait { margin-inline: auto; }
   .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Wide heatmap calendars scroll inside their own cards instead of
+     pushing the whole page sideways */
+  .gh-calendar-pane,
+  .cursor-map-wrap,
+  .mk-activity,
+  .wispr-chart { overflow-x: auto; }
+
+  /* Desktop-only floating controls are clutter on touch screens */
   .env-hud, .city-speed, .theme-btn { display: none; }
+}
+
+/* Phones: scale type with the viewport, grow nav into comfortable
+   touch targets, and reclaim horizontal space */
+@media (max-width: 600px) {
+  .stage { padding: 8px; }
+  .unit { gap: 10px; }
+  .left { padding: 12px 10px; }
+
+  /* Larger, easier-to-tap navigation rows (~48px tall) */
+  .nav-item { padding: 12px 12px; font-size: 24px; }
+  .nav-item .num { font-size: 13px; }
+  .nav-label { font-size: 11px; }
+
+  /* Keep terminal copy readable while reclaiming side padding */
+  .term-screen { padding: 16px 14px; font-size: 20px; }
+  .term-footer { font-size: 16px; }
+
+  /* Shrink the window chrome so the long path can't overflow */
+  .term-chrome { font-size: 8px; gap: 8px; padding: 8px 10px; letter-spacing: 0.5px; }
+  .chrome-dots span { width: 9px; height: 9px; }
+  .chrome-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chrome-meta { gap: 6px; }
+
+  /* Headings and body scale with screen width but never exceed
+     their desktop sizes — adaptive across phone dimensions */
+  h1.glitch, .h1 { font-size: clamp(17px, 5.2vw, 26px); line-height: 1.4; }
+  .h2 { font-size: clamp(14px, 4vw, 21px); letter-spacing: 1px; }
+  .lede { font-size: clamp(16px, 4.6vw, 25px); }
+  .body { font-size: clamp(15px, 4.2vw, 21px); }
+  .ascii-banner { font-size: 7px; overflow-x: auto; }
+
+  /* Experience timeline: the desktop 3-column row (date | badge | text)
+     crushes the description into a sliver on phones and leaves big empty
+     gaps beside the short date/badge. Stack date + badge on a top row and
+     let the description span the full width below. */
+  .timeline li {
+    grid-template-columns: auto auto;
+    column-gap: 10px;
+    row-gap: 6px;
+    align-items: center;
+    padding: 12px 0;
+  }
+  .timeline .ts { white-space: nowrap; }
+  .timeline .ev { justify-self: start; }
+  .timeline .ev-body { grid-column: 1 / -1; font-size: 17px; line-height: 1.5; }
+
+  /* Compact the persistent HIDE control so it doesn't crowd content */
+  .minimize-btn { top: 10px; right: 10px; padding: 8px 10px; font-size: 10px; }
 }
