@@ -2083,6 +2083,21 @@ a.slot:focus-visible {
   .body { font-size: clamp(15px, 4.2vw, 21px); }
   .ascii-banner { font-size: 7px; overflow-x: auto; }
 
+  /* Experience timeline: the desktop 3-column row (date | badge | text)
+     crushes the description into a sliver on phones and leaves big empty
+     gaps beside the short date/badge. Stack date + badge on a top row and
+     let the description span the full width below. */
+  .timeline li {
+    grid-template-columns: auto auto;
+    column-gap: 10px;
+    row-gap: 6px;
+    align-items: center;
+    padding: 12px 0;
+  }
+  .timeline .ts { white-space: nowrap; }
+  .timeline .ev { justify-self: start; }
+  .timeline .ev-body { grid-column: 1 / -1; font-size: 17px; line-height: 1.5; }
+
   /* Compact the persistent HIDE control so it doesn't crowd content */
   .minimize-btn { top: 10px; right: 10px; padding: 8px 10px; font-size: 10px; }
 }
