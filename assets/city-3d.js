@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
-import { createCityLayout, parseCitySeed, createRng } from './city-3d-layout.js?v=20260614b';
+import { createCityLayout, parseCitySeed, createRng } from './city-3d-layout.js?v=20260624b';
 
 const canvas = document.getElementById('bg-city3d');
 const params = new URLSearchParams(window.location.search);
@@ -535,8 +535,16 @@ function buildGround() {
   // Static dark floor spanning every strip from the front row to the far
   // background. The road lane + markings (which convey motion) live in the
   // scrolling city group instead.
+  //
+  // The plane is asymmetric on purpose: the near edge runs well forward (z=+84)
+  // so it covers the foreground and slides off the bottom of the frame, while
+  // the far edge sits just behind the farthest building row (z=-120, ~8 units
+  // past the z=-112 row). Because the camera is orthographic and tilted down,
+  // the ground's far edge projects HIGH in the frame; if it extends much past
+  // the buildings it paints over the starfield sky. Depth 204 centered at
+  // z=-18 keeps near=+84 / far=-120 — tight behind the deepest row.
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(WORLD_WIDTH * 3, 180),
+    new THREE.PlaneGeometry(WORLD_WIDTH * 3, 204),
     new THREE.MeshStandardMaterial({
       color: palette.col.streetDark,
       roughness: 0.48,
@@ -546,7 +554,7 @@ function buildGround() {
     }),
   );
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set(0, -0.4, -6);
+  ground.position.set(0, -0.4, -18);
   ground.receiveShadow = true;
   scene.add(ground);
 }
@@ -573,11 +581,19 @@ function buildFlyers() {
   const rand = (min, max) => min + (max - min) * rng();
   const TAU = Math.PI * 2;
 
-  // --- Airships: big, slow, branded ---
+  // --- Airships: big, slow, branded with tech-company names (same list
+  // as the building signs); pick distinct names so no two ships repeat. ---
+  const usedSigns = new Set();
+  const pickDistinctSign = () => {
+    let s = pickSign();
+    for (let tries = 0; tries < 8 && usedSigns.has(s); tries++) s = pickSign();
+    usedSigns.add(s);
+    return s;
+  };
   const airshipDefs = [
-    { sign: 'KAI-CORP', accent: 1, baseY: 58, z: -4, vx: 0.06 },
-    { sign: 'SYS//07', accent: 0, baseY: 67, z: 12, vx: -0.045 },
-    { sign: 'CMU-LIFT', accent: 2, baseY: 49, z: -22, vx: 0.034 },
+    { sign: pickDistinctSign(), accent: 1, baseY: 58, z: -4, vx: 0.06 },
+    { sign: pickDistinctSign(), accent: 0, baseY: 67, z: 12, vx: -0.045 },
+    { sign: pickDistinctSign(), accent: 2, baseY: 49, z: -22, vx: 0.034 },
   ];
   airshipDefs.forEach((def) => {
     const group = new THREE.Group();

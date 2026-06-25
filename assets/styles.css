@@ -1382,6 +1382,16 @@ a.slot:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
+/* Brand logo icons inside the social slots: inherit the slot's neon
+   color via currentColor and reproduce its glow with a drop-shadow
+   (so they also shift to magenta on hover, just like the old text). */
+.slot-ico {
+  width: 58%; height: 58%;
+  fill: currentColor;
+  filter: drop-shadow(0 0 5px currentColor);
+  transition: filter 0.12s ease, fill 0.12s ease;
+  pointer-events: none;
+}
 
 /* LOG */
 .timeline { list-style: none; display: flex; flex-direction: column; gap: 0; }
