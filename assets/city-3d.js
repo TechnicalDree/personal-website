@@ -573,11 +573,19 @@ function buildFlyers() {
   const rand = (min, max) => min + (max - min) * rng();
   const TAU = Math.PI * 2;
 
-  // --- Airships: big, slow, branded ---
+  // --- Airships: big, slow, branded with tech-company names (same list
+  // as the building signs); pick distinct names so no two ships repeat. ---
+  const usedSigns = new Set();
+  const pickDistinctSign = () => {
+    let s = pickSign();
+    for (let tries = 0; tries < 8 && usedSigns.has(s); tries++) s = pickSign();
+    usedSigns.add(s);
+    return s;
+  };
   const airshipDefs = [
-    { sign: 'KAI-CORP', accent: 1, baseY: 58, z: -4, vx: 0.06 },
-    { sign: 'SYS//07', accent: 0, baseY: 67, z: 12, vx: -0.045 },
-    { sign: 'CMU-LIFT', accent: 2, baseY: 49, z: -22, vx: 0.034 },
+    { sign: pickDistinctSign(), accent: 1, baseY: 58, z: -4, vx: 0.06 },
+    { sign: pickDistinctSign(), accent: 0, baseY: 67, z: 12, vx: -0.045 },
+    { sign: pickDistinctSign(), accent: 2, baseY: 49, z: -22, vx: 0.034 },
   ];
   airshipDefs.forEach((def) => {
     const group = new THREE.Group();
