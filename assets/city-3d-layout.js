@@ -64,6 +64,16 @@ const STRIPS = [
   { z: -16, scale: 0.82, landmarks: 1, supports: 11 },  // background strips, receding + shrinking
   { z: -32, scale: 0.66, landmarks: 0, supports: 13 },
   { z: -48, scale: 0.52, landmarks: 0, supports: 15 },
+  // Deep-background rows: a denser, smaller skyline receding toward the horizon.
+  // The taper flattens here (vs the steeper drop above) so the far towers keep
+  // enough height to read as a silhouette through the night fog instead of
+  // collapsing into a flat strip. One far landmark gives the back row a spike.
+  // The farthest row (z=-112) stays inside the ground plane's extended far edge
+  // (z=-120 in city-3d.js); pushing rows past it would leave them floating.
+  { z: -64, scale: 0.44, landmarks: 1, supports: 16 },
+  { z: -80, scale: 0.38, landmarks: 0, supports: 17 },
+  { z: -96, scale: 0.34, landmarks: 0, supports: 18 },
+  { z: -112, scale: 0.30, landmarks: 0, supports: 19 },
 ];
 
 export function createCityLayout(seed) {
