@@ -154,14 +154,34 @@ keeps running — only the window tilt freezes).
 
 ## Mobile / touch
 
-Active only at **≥901px**, matching the existing `@media (max-width: 900px)`
-responsive switch where `.unit` becomes single-column `height:auto`.
+Active only at **≥901px with a fine, hovering pointer**, matching the existing
+`@media (max-width: 900px)` responsive switch where `.unit` becomes single-column
+`height:auto`, and keeping touch tablets out (drag/resize is a mouse/trackpad
+affordance).
 
-- A `matchMedia('(min-width: 901px)')` listener gates activation.
-- Below 901px: handles hidden (`display:none` via a body/unit class), pointer
-  listeners no-op, and any inline `--win-*` vars are cleared so the responsive
-  single-column layout fully governs.
-- Toggles live as the viewport crosses the breakpoint.
+- A `matchMedia('(min-width: 901px) and (hover: hover) and (pointer: fine)')`
+  listener gates activation; `startDrag`/`startResize` also ignore
+  `pointerType === 'touch'` as defense-in-depth so a title-bar swipe scrolls.
+- Below the gate: handles hidden (`display:none` via the `win-enabled` class),
+  pointer listeners no-op, and any inline `--win-*` vars are cleared so the
+  responsive single-column layout fully governs.
+- Toggles live as the viewport/capability crosses the gate.
+
+## Review refinements (post-implementation)
+
+An adversarial review surfaced refinements folded into the final code:
+
+- **Handle-aware drag clamp.** The drag handle lives at the window's *top*, so an
+  upward drag clamps the top handle band (not the far/bottom edge) on-screen —
+  otherwise the title bar (and dbl-click-reset target) could strand off-screen.
+  `clampDragOffset` takes a `handleH` param for this.
+- **No accidental persistence.** Resize, like drag, only saves on an actual move
+  (a stray click on a handle no longer pins the responsive default into storage).
+- **Single interaction at a time.** A re-entrancy guard + per-`pointerId` filter
+  prevents a second pointer (multi-touch/pen) from corrupting an in-progress
+  drag; pointer listeners live on `window` so teardown fires even if capture
+  fails. Reset freezes parallax for its ease. `bounds()` clamps min ≤ max on
+  short viewports.
 
 ## Testing
 

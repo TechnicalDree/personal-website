@@ -231,7 +231,9 @@
     const ty = py * depthBg * 0.65;
     parallaxRoot.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(1.06)`;
 
-    if (unit) {
+    // Freeze the window tilt while it's being dragged/resized so it doesn't
+    // wobble under the cursor (window-frame.js toggles this class).
+    if (unit && !document.body.classList.contains('win-interacting')) {
       const maxTilt = 5.5;
       const rx = (-py * maxTilt).toFixed(3);
       const ry = (px * maxTilt).toFixed(3);

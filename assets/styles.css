@@ -175,6 +175,31 @@ body.theme-amber .theme-dot { background: #ffb84d; box-shadow: 0 0 8px #ffb84d; 
 body.theme-green .theme-dot { background: #44ff88; box-shadow: 0 0 8px #44ff88; }
 body.theme-mono .theme-dot { background: #c8d0d8; box-shadow: 0 0 8px #c8d0d8; }
 
+.weather-btn {
+  position: fixed; top: 14px; right: 300px; z-index: 9999;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(3, 13, 26, 0.86);
+  border: 2px solid var(--yellow);
+  color: var(--yellow);
+  padding: 10px 12px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px; letter-spacing: 1px;
+  cursor: pointer;
+  text-shadow: 0 0 6px rgba(246,255,122,0.5);
+  box-shadow: 0 0 12px rgba(246,255,122,0.3), 0 0 0 1px #000;
+  transition: all 0.15s;
+}
+.weather-btn:hover { color: var(--cyan); border-color: var(--cyan); transform: translateY(-1px); }
+.weather-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #5a6675;
+  box-shadow: none;
+}
+.weather-btn.wx-rain .weather-dot { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+.weather-btn.wx-snow .weather-dot { background: #eafcff; box-shadow: 0 0 8px #eafcff; }
+.weather-btn.wx-wind .weather-dot { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+.weather-btn.wx-fog .weather-dot { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); }
+
 .city-speed {
   position: fixed; top: 66px; right: 14px; z-index: 9999;
   width: 190px;
@@ -659,19 +684,87 @@ body.admin-edit-mode [data-edit].is-editing:focus {
 }
 .unit {
   position: relative;
-  width: min(1320px, 96vw);
-  height: min(820px, 94vh);
+  width: var(--win-w, min(1320px, 96vw));
+  height: var(--win-h, min(820px, 94vh));
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 16px;
   --tilt-x: 0deg;
   --tilt-y: 0deg;
-  transform: perspective(1800px) rotateX(calc(5deg + var(--tilt-x))) rotateY(calc(-7deg + var(--tilt-y)));
+  /* --win-x/--win-y are the drag offset, applied as the OUTERMOST transform so
+     the move tracks the cursor 1:1 despite the perspective tilt. */
+  transform:
+    translate3d(var(--win-x, 0px), var(--win-y, 0px), 0)
+    perspective(1800px) rotateX(calc(5deg + var(--tilt-x))) rotateY(calc(-7deg + var(--tilt-y)));
   transform-style: preserve-3d;
   filter:
     drop-shadow(0 30px 40px rgba(255, 63, 166, 0.18))
     drop-shadow(0 0 24px rgba(54,245,255,0.22));
 }
+
+/* ===== DRAGGABLE / RESIZABLE WINDOW ===== */
+/* The chrome bar is the drag handle (desktop only). */
+.unit.win-enabled .term-chrome {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.unit.win-dragging .term-chrome { cursor: grabbing; }
+.unit.win-dragging,
+.unit.win-resizing { user-select: none; }
+
+/* Smooth ease back to default on reset (double-click the chrome bar). */
+.unit.win-resetting {
+  transition: transform 0.35s ease, width 0.35s ease, height 0.35s ease;
+}
+
+/* Eight resize handles — hidden until the desktop gate enables the window. */
+.win-handle {
+  position: absolute;
+  z-index: 6;
+  display: none;
+  touch-action: none;
+}
+.unit.win-enabled .win-handle { display: block; }
+
+/* A faint neon nub appears on hover/drag so the frame stays clean at rest. */
+.win-handle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  background: var(--cyan, #36f5ff);
+  box-shadow: 0 0 8px var(--cyan, #36f5ff);
+}
+.win-handle:hover::after,
+.unit.win-resizing .win-handle::after { opacity: 0.5; }
+
+/* Corner handles: small squares that overhang the frame slightly. */
+.win-handle-ne, .win-handle-nw, .win-handle-se, .win-handle-sw {
+  width: 18px; height: 18px;
+}
+.win-handle-nw { top: -6px; left: -6px; cursor: nwse-resize; }
+.win-handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+.win-handle-ne { top: -6px; right: -6px; cursor: nesw-resize; }
+.win-handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+/* Corner nubs read as little L-brackets rather than full squares. */
+.win-handle-nw::after, .win-handle-ne::after,
+.win-handle-se::after, .win-handle-sw::after { inset: auto; width: 10px; height: 10px; }
+.win-handle-nw::after { top: 6px; left: 6px; }
+.win-handle-ne::after { top: 6px; right: 6px; }
+.win-handle-se::after { bottom: 6px; right: 6px; }
+.win-handle-sw::after { bottom: 6px; left: 6px; }
+
+/* Edge handles: thin strips inset from the corners. */
+.win-handle-n, .win-handle-s { left: 18px; right: 18px; height: 12px; cursor: ns-resize; }
+.win-handle-e, .win-handle-w { top: 18px; bottom: 18px; width: 12px; cursor: ew-resize; }
+.win-handle-n { top: -6px; }
+.win-handle-s { bottom: -6px; }
+.win-handle-w { left: -6px; }
+.win-handle-e { right: -6px; }
+.win-handle-n::after, .win-handle-s::after { left: 30%; right: 30%; top: 4px; bottom: 4px; }
+.win-handle-e::after, .win-handle-w::after { top: 30%; bottom: 30%; left: 4px; right: 4px; }
 
 /* ===== LEFT PANEL ===== */
 .left {
@@ -2060,7 +2153,7 @@ a.slot:focus-visible {
   .wispr-chart { overflow-x: auto; }
 
   /* Desktop-only floating controls are clutter on touch screens */
-  .env-hud, .city-speed, .theme-btn { display: none; }
+  .env-hud, .city-speed, .theme-btn, .weather-btn { display: none; }
 }
 
 /* Phones: scale type with the viewport, grow nav into comfortable
