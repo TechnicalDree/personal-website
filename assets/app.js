@@ -658,6 +658,10 @@
       cycleTheme(1);
       showToast(`◆ PHOSPHOR · ${THEME_LABELS[document.body.dataset.theme || 'default']}`);
     }
+    if ((e.key === 'w' || e.key === 'W') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      cycleWeather();
+    }
   });
 
   // --- Project detail modal ---
@@ -1086,6 +1090,37 @@
       showToast(`◆ PHOSPHOR · ${THEME_LABELS[next]}`);
     });
   }
+
+  // --- Weather toggle (off by default): none → rain → snow → wind → fog ---
+  const WEATHER_MODES = ['none', 'rain', 'snow', 'wind', 'fog'];
+  const WEATHER_LABELS = { none: 'OFF', rain: 'RAIN', snow: 'SNOW', wind: 'WIND', fog: 'FOG' };
+  const weatherBtn = document.getElementById('weather-btn');
+  function reflectWeather(mode) {
+    const safe = WEATHER_LABELS[mode] ? mode : 'none';
+    if (!weatherBtn) return;
+    const label = weatherBtn.querySelector('.weather-label');
+    if (label) label.textContent = `WEATHER: ${WEATHER_LABELS[safe]}`;
+    WEATHER_MODES.forEach((m) => weatherBtn.classList.remove(`wx-${m}`));
+    if (safe !== 'none') weatherBtn.classList.add(`wx-${safe}`);
+  }
+  function cycleWeather() {
+    const current = (window.City3D && window.City3D.weather) || 'none';
+    const next = WEATHER_MODES[(WEATHER_MODES.indexOf(current) + 1) % WEATHER_MODES.length];
+    if (window.City3D && typeof window.City3D.setWeather === 'function') {
+      window.City3D.setWeather(next);
+    } else {
+      reflectWeather(next);
+    }
+    showToast(`☂ WEATHER · ${WEATHER_LABELS[next]}`);
+  }
+  if (weatherBtn) weatherBtn.addEventListener('click', cycleWeather);
+  // Keep the label in sync when weather is set via the API or ?weather= URL param.
+  // city-3d.js is a deferred module, so City3D isn't ready when app.js runs — the event
+  // (dispatched from setWeather during init) and the ready event both cover initial sync.
+  window.addEventListener('city-weather', (e) => reflectWeather(e.detail && e.detail.weather));
+  window.addEventListener('city-3d-ready', () => {
+    if (window.City3D) reflectWeather(window.City3D.weather);
+  });
 
   // --- Idle skyline mode (auto-hide terminal after inactivity) ---
   const IDLE_MS = 90000;

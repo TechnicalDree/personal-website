@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.min.js';
 import { createCityLayout, parseCitySeed, createRng } from './city-3d-layout.js?v=20260624b';
+import { createGroundAgents, wrapX, AGENT_BOUND, AVENUE } from './city-3d-agents.js?v=20260626b';
 
 const canvas = document.getElementById('bg-city3d');
 const params = new URLSearchParams(window.location.search);
@@ -44,6 +45,28 @@ let windowMaterials = [];
 let signRecords = [];
 let flyers = [];
 let flyersGroup = null;
+let groundAgents = null;
+let groundGroup = null;
+let pedestrianBodies = null;
+let pedestrianHeads = null;
+let pedestrianHeadMaterial = null;
+let pedestrianState = [];
+let robotState = [];
+let vehicleState = [];
+let headlightMaterial = null;
+let taillightMaterial = null;
+// Dark road/ground surface materials whose colour is baked from the palette at build
+// time; recolored together on theme change. Each entry: { material, mix } where mix is
+// the lerp amount from streetDark toward bld4.
+let groundSurfaceMaterials = [];
+// Weather (off by default). One InstancedMesh of streaks shared by rain/snow/wind;
+// fog is a fog-density boost (no particles). See WEATHER below.
+let weatherMode = 'none';
+let weatherGroup = null;
+let weatherMesh = null;
+let weatherMaterial = null;
+let weatherParticles = [];
+let weatherCountScale = 1;
 let disposed = false;
 
 const fallbackSeed = () => {
@@ -64,6 +87,12 @@ const api = {
   },
   applyTheme(name) {
     applyTheme(name);
+  },
+  setWeather(mode) {
+    setWeather(mode);
+  },
+  get weather() {
+    return weatherMode;
   },
   resize() {
     resize();
@@ -113,6 +142,13 @@ function liftedBuildingColor(color, index) {
     new THREE.Color(palette.col.cyan),
     0.045 + index * 0.012,
   );
+}
+
+// Current hex for an accent slot (cyan / magenta / yellow), used to tint the
+// per-instance pedestrian heads from the active palette.
+function accentHex(index) {
+  const col = palette.col;
+  return [col.cyan, col.mag, col.yel][index] || col.cyan;
 }
 
 function makeMaterials() {
@@ -166,6 +202,10 @@ function applyTheme(name) {
   });
   windowMaterials.forEach((material, index) => material.color.set(accentColors[index]));
   signRecords.forEach((record) => drawSignTexture(record));
+  recolorPedestrianHeads();
+  groundSurfaceMaterials.forEach(({ material, mix }) => {
+    material.color.copy(new THREE.Color(col.streetDark).lerp(new THREE.Color(col.bld4), mix));
+  });
   scene.fog.color.set(col.bld1);
   if (postMaterial) {
     postMaterial.uniforms.uTint.value.set(col.cyan);
@@ -487,6 +527,7 @@ function buildRoad(parent, road) {
     transparent: true,
     opacity: 0.95,
   });
+  groundSurfaceMaterials.push({ material: laneMat, mix: 0.45 });
   const lane = new THREE.Mesh(new THREE.PlaneGeometry(road.period, road.depth), laneMat);
   lane.rotation.x = -Math.PI / 2;
   lane.position.set(0, -0.28, road.z);
@@ -543,15 +584,17 @@ function buildGround() {
   // the ground's far edge projects HIGH in the frame; if it extends much past
   // the buildings it paints over the starfield sky. Depth 204 centered at
   // z=-18 keeps near=+84 / far=-120 — tight behind the deepest row.
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(palette.col.streetDark),
+    roughness: 0.48,
+    metalness: 0.42,
+    transparent: true,
+    opacity: 0.92,
+  });
+  groundSurfaceMaterials.push({ material: groundMat, mix: 0 });
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(WORLD_WIDTH * 3, 204),
-    new THREE.MeshStandardMaterial({
-      color: palette.col.streetDark,
-      roughness: 0.48,
-      metalness: 0.42,
-      transparent: true,
-      opacity: 0.92,
-    }),
+    groundMat,
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -0.4, -18);
@@ -679,6 +722,393 @@ function updateFlyers(delta) {
   }
 }
 
+// --- Ground life: pedestrians, robots and two-way traffic. ---
+// Like the flyers, ground agents live in their own group (NOT the 3×-tiled city),
+// drift on their own velocity independent of the speed slider, and wrap at
+// AGENT_BOUND so the street always feels busy. Spawn definitions come from the
+// pure, seeded city-3d-agents module so the layout is deterministic + testable.
+
+// Pedestrians are instanced (a dark body box + a glowing accent head) so a packed
+// crowd stays cheap; their per-instance head colour is re-tinted on theme change.
+function buildPedestrians(list) {
+  pedestrianState = [];
+  if (!list.length) return;
+  pedestrianHeadMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+  pedestrianBodies = new THREE.InstancedMesh(unitBox, buildingMaterials[1], list.length);
+  pedestrianHeads = new THREE.InstancedMesh(unitBox, pedestrianHeadMaterial, list.length);
+  pedestrianBodies.castShadow = false;
+  pedestrianBodies.frustumCulled = false;
+  pedestrianHeads.frustumCulled = false;
+  pedestrianHeads.renderOrder = 3;
+  const color = new THREE.Color();
+  list.forEach((p, i) => {
+    const bodyW = p.height * 0.3;
+    const bodyH = p.height * 0.72;
+    const bodyD = p.height * 0.26;
+    const headSize = p.height * 0.26;
+    const state = {
+      x: p.x, z: p.z, vx: p.vx, accentIndex: p.accentIndex,
+      bodyW, bodyH, bodyD, headSize,
+      bodyBaseY: bodyH * 0.5,
+      headBaseY: bodyH + headSize * 0.45,
+      bobSpeed: p.bobSpeed, bobPhase: p.bobPhase, bobAmp: p.bobAmp,
+      index: i,
+    };
+    pedestrianState.push(state);
+    dummy.rotation.set(0, 0, 0);
+    dummy.position.set(p.x, state.bodyBaseY, p.z);
+    dummy.scale.set(bodyW, bodyH, bodyD);
+    dummy.updateMatrix();
+    pedestrianBodies.setMatrixAt(i, dummy.matrix);
+    dummy.position.set(p.x, state.headBaseY, p.z);
+    dummy.scale.set(headSize, headSize, headSize);
+    dummy.updateMatrix();
+    pedestrianHeads.setMatrixAt(i, dummy.matrix);
+    pedestrianHeads.setColorAt(i, color.set(accentHex(p.accentIndex)));
+  });
+  pedestrianBodies.instanceMatrix.needsUpdate = true;
+  pedestrianHeads.instanceMatrix.needsUpdate = true;
+  if (pedestrianHeads.instanceColor) pedestrianHeads.instanceColor.needsUpdate = true;
+  groundGroup.add(pedestrianBodies);
+  groundGroup.add(pedestrianHeads);
+}
+
+function recolorPedestrianHeads() {
+  if (!pedestrianHeads) return;
+  const color = new THREE.Color();
+  pedestrianState.forEach((p) => {
+    pedestrianHeads.setColorAt(p.index, color.set(accentHex(p.accentIndex)));
+  });
+  if (pedestrianHeads.instanceColor) pedestrianHeads.instanceColor.needsUpdate = true;
+}
+
+function buildRobot(group, r) {
+  const bodyMat = buildingMaterials[2];
+  const accent = accentMaterials[r.accentIndex];
+  const H = r.height;
+  if (r.kind === 'wheeled') {
+    const bodyH = H * 0.6;
+    addFlyerPart(group, unitBox, bodyMat, { y: bodyH * 0.5, sx: H * 0.5, sy: bodyH, sz: H * 0.42 });
+    addFlyerPart(group, unitSphere, bodyMat, { y: bodyH + H * 0.12, sx: H * 0.34, sy: H * 0.3, sz: H * 0.34 });
+    addFlyerPart(group, unitBox, accent, { y: bodyH + H * 0.12, z: H * 0.2, sx: H * 0.16, sy: H * 0.1, sz: 0.12 });
+    addFlyerPart(group, unitBox, accent, { y: bodyH + H * 0.32, sx: 0.08, sy: H * 0.18, sz: 0.08 });
+    addFlyerPart(group, unitSphere, accent, { y: bodyH + H * 0.46, sx: 0.24, sy: 0.24, sz: 0.24 });
+  } else {
+    const legH = H * 0.28;
+    const bodyH = H * 0.5;
+    addFlyerPart(group, unitBox, bodyMat, { x: -H * 0.1, y: legH * 0.5, sx: H * 0.12, sy: legH, sz: H * 0.14 });
+    addFlyerPart(group, unitBox, bodyMat, { x: H * 0.1, y: legH * 0.5, sx: H * 0.12, sy: legH, sz: H * 0.14 });
+    addFlyerPart(group, unitBox, bodyMat, { y: legH + bodyH * 0.5, sx: H * 0.34, sy: bodyH, sz: H * 0.3 });
+    addFlyerPart(group, unitBox, bodyMat, { y: legH + bodyH + H * 0.1, sx: H * 0.26, sy: H * 0.2, sz: H * 0.26 });
+    addFlyerPart(group, unitBox, accent, { y: legH + bodyH + H * 0.1, z: H * 0.15, sx: H * 0.18, sy: H * 0.06, sz: 0.12 });
+    addFlyerPart(group, unitBox, accent, { y: legH + bodyH * 0.55, z: H * 0.16, sx: H * 0.08, sy: bodyH * 0.5, sz: 0.08 });
+  }
+}
+
+function buildRobots(list) {
+  robotState = [];
+  list.forEach((r) => {
+    const group = new THREE.Group();
+    buildRobot(group, r);
+    group.position.set(r.x, 0, r.z);
+    groundGroup.add(group);
+    robotState.push({
+      mesh: group, x: r.x, z: r.z, vx: r.vx,
+      bobSpeed: r.bobSpeed, bobPhase: r.bobPhase, bobAmp: r.bobAmp,
+    });
+  });
+}
+
+// Built in local space facing its travel direction (dir = +1 or -1): headlights on
+// the leading end, taillights on the trailing end, glowing windows + bus sign on the
+// camera-facing (+z) side so they read regardless of which way the vehicle drives.
+function buildVehicle(group, v, dir) {
+  const L = v.length;
+  const W = v.width;
+  const H = v.height;
+  const a = v.accentIndex;
+  const chassisMat = v.kind === 'bus' ? buildingMaterials[4]
+    : v.kind === 'truck' ? buildingMaterials[3]
+      : buildingMaterials[2];
+  addFlyerPart(group, unitBox, chassisMat, { y: H * 0.32, sx: L, sy: H * 0.5, sz: W });
+  if (v.kind === 'sedan') {
+    addFlyerPart(group, unitBox, chassisMat, { x: -dir * L * 0.06, y: H * 0.72, sx: L * 0.52, sy: H * 0.42, sz: W * 0.9 });
+  } else if (v.kind === 'truck') {
+    addFlyerPart(group, unitBox, chassisMat, { x: dir * L * 0.3, y: H * 0.74, sx: L * 0.3, sy: H * 0.5, sz: W * 0.94 });
+    addFlyerPart(group, unitBox, buildingMaterials[2], { x: -dir * L * 0.18, y: H * 0.78, sx: L * 0.58, sy: H * 0.6, sz: W * 0.98 });
+  } else {
+    addFlyerPart(group, unitBox, chassisMat, { y: H * 0.74, sx: L * 0.94, sy: H * 0.5, sz: W * 0.95 });
+  }
+  const winLen = v.kind === 'sedan' ? L * 0.46 : L * 0.8;
+  const winY = v.kind === 'sedan' ? H * 0.74 : H * 0.72;
+  [W * 0.5 + 0.05, -W * 0.5 - 0.05].forEach((zo) => {
+    addFlyerPart(group, unitBox, windowMaterials[a], { x: dir * L * 0.02, y: winY, z: zo, sx: winLen, sy: H * 0.2, sz: 0.06 });
+  });
+  [W * 0.32, -W * 0.32].forEach((zo) => {
+    addFlyerPart(group, unitBox, headlightMaterial, { x: dir * L * 0.5, y: H * 0.3, z: zo, sx: 0.3, sy: 0.28, sz: 0.3 });
+    addFlyerPart(group, unitBox, taillightMaterial, { x: -dir * L * 0.5, y: H * 0.32, z: zo, sx: 0.22, sy: 0.26, sz: 0.28 });
+  });
+  if (v.kind === 'bus') {
+    addSign(group, pickSign(), dir * L * 0.12, H * 0.74, W * 0.5 + 0.12, L * 0.4, H * 0.4, a);
+  }
+  if (v.hasTrail) {
+    const trailLen = L * 1.5;
+    addFlyerPart(group, unitBox, windowMaterials[a], { x: -dir * (L * 0.5 + trailLen * 0.5), y: H * 0.34, sx: trailLen, sy: 0.28, sz: 0.4 });
+  }
+}
+
+function buildVehicles(list) {
+  vehicleState = [];
+  headlightMaterial = headlightMaterial || new THREE.MeshBasicMaterial({ color: 0xfff2cc, toneMapped: false });
+  taillightMaterial = taillightMaterial || new THREE.MeshBasicMaterial({ color: 0xff2b3d, toneMapped: false });
+  list.forEach((v) => {
+    const group = new THREE.Group();
+    const dir = Math.sign(v.vx) || 1;
+    buildVehicle(group, v, dir);
+    group.position.set(v.x, 0, v.z);
+    groundGroup.add(group);
+    vehicleState.push({ mesh: group, x: v.x, z: v.z, vx: v.vx });
+  });
+}
+
+// The foreground avenue surface the traffic drives on: a faintly lit pavement
+// strip with glowing curb lines and centre dashes. Static (the cars provide the
+// motion), spanning the full agent-wrap width.
+function buildAvenue() {
+  const col = palette.col;
+  const width = AGENT_BOUND * 2 + 40;
+  const laneMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(col.streetDark).lerp(new THREE.Color(col.bld4), 0.5),
+    roughness: 0.5,
+    metalness: 0.5,
+    transparent: true,
+    opacity: 0.95,
+  });
+  groundSurfaceMaterials.push({ material: laneMat, mix: 0.5 });
+  const lane = new THREE.Mesh(new THREE.PlaneGeometry(width, AVENUE.depth), laneMat);
+  lane.rotation.x = -Math.PI / 2;
+  lane.position.set(0, -0.32, AVENUE.z);
+  lane.receiveShadow = true;
+  groundGroup.add(lane);
+  [AVENUE.z - AVENUE.depth / 2, AVENUE.z + AVENUE.depth / 2].forEach((edgeZ, index) => {
+    addMass(groundGroup, {
+      x: 0, y: -0.02, z: edgeZ, w: width, h: 0.05, d: 0.22,
+      material: accentMaterials[index === 0 ? 0 : 1], castShadow: false,
+    });
+  });
+  // Centre dashes, instanced per accent material (one draw call each), like finishWindows.
+  const dashCount = Math.round(width / 6);
+  const dashSpacing = width / dashCount;
+  const dashMatrices = [[], [], []];
+  for (let i = 0; i < dashCount; i++) {
+    const x = -width / 2 + (i + 0.5) * dashSpacing;
+    dummy.position.set(x, -0.02, AVENUE.z);
+    dummy.rotation.set(0, 0, 0);
+    dummy.scale.set(3.4, 0.05, 0.42);
+    dummy.updateMatrix();
+    dashMatrices[i % 3].push(dummy.matrix.clone());
+  }
+  dashMatrices.forEach((matrices, accentIndex) => {
+    if (!matrices.length) return;
+    const mesh = new THREE.InstancedMesh(unitBox, accentMaterials[accentIndex], matrices.length);
+    matrices.forEach((matrix, index) => mesh.setMatrixAt(index, matrix));
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.frustumCulled = false;
+    mesh.castShadow = false;
+    groundGroup.add(mesh);
+  });
+}
+
+// A low-poly NYC-style subway entrance, built as a clear foreground landmark: a railed
+// stairwell with neon steps, two tall posts with big glowing globes (cyan + magenta,
+// like real station lamps) rising above the crowd, and an overhead SUBWAY marquee.
+function buildSubwayEntrance(x, z, accentIndex) {
+  const rim = buildingMaterials[3];
+  const dark = buildingMaterials[1];
+  const accent = accentMaterials[accentIndex];
+  const W = 6;
+  const D = 4.2;
+  const wallH = 0.8;
+  const backZ = z - D / 2 + 0.25;
+  const frontZ = z + D / 2 - 0.25;
+  // Recessed dark opening + neon step ledges descending toward the back.
+  addMass(groundGroup, { x, y: 0.05, z, w: W - 0.8, h: 0.1, d: D - 0.8, material: dark, castShadow: false });
+  for (let i = 0; i < 4; i++) {
+    addMass(groundGroup, {
+      x, y: 0.08, z: z + D * 0.2 - i * 0.5, w: W - 1.6, h: 0.05, d: 0.2,
+      material: accentMaterials[i % 3], castShadow: false,
+    });
+  }
+  // Curb walls on three sides (front open toward the camera) with neon caps.
+  addMass(groundGroup, { x, y: 0, z: backZ, w: W, h: wallH, d: 0.4, material: rim });
+  [-1, 1].forEach((side) => {
+    const wx = x + side * (W / 2 - 0.2);
+    addMass(groundGroup, { x: wx, y: 0, z, w: 0.4, h: wallH, d: D, material: rim });
+    addMass(groundGroup, { x: wx, y: wallH, z, w: 0.46, h: 0.1, d: D, material: accent, castShadow: false });
+  });
+  // Handrail along the open front edge.
+  addBeam(groundGroup,
+    new THREE.Vector3(x - W / 2 + 0.25, wallH, frontZ),
+    new THREE.Vector3(x + W / 2 - 0.25, wallH, frontZ),
+    0.07, accent);
+  // Two tall posts with big glowing globes (cyan + magenta) at the front corners.
+  [[-1, 0], [1, 1]].forEach(([side, lampAccent]) => {
+    const px = x + side * (W / 2 - 0.25);
+    addBeam(groundGroup, new THREE.Vector3(px, 0, frontZ), new THREE.Vector3(px, 3.2, frontZ), 0.1, rim);
+    addFlyerPart(groundGroup, unitSphere, accentMaterials[lampAccent], { x: px, y: 3.5, z: frontZ, sx: 0.95, sy: 0.95, sz: 0.95 });
+  });
+  // Overhead SUBWAY marquee on a frame above the entrance, facing the camera.
+  const signY = wallH + 2.5;
+  [-1, 1].forEach((side) => {
+    const px = x + side * (W * 0.42);
+    addBeam(groundGroup, new THREE.Vector3(px, wallH, backZ + 0.05), new THREE.Vector3(px, signY + 0.85, backZ + 0.05), 0.09, rim);
+  });
+  addSign(groundGroup, 'SUBWAY', x, signY, backZ + 0.1, W * 0.92, 1.5, accentIndex);
+}
+
+// --- Weather (off by default) ---
+const WTAU = Math.PI * 2;
+// Particle volume, sized to the visible frame so particles aren't wasted off-screen.
+// Streaks are sized in WORLD units; the camera shows ~9px per unit, so they must be
+// chunky (a 0.06-unit streak is sub-pixel and invisible).
+const WEATHER_HALF_W = 95; // half-width (wrap bound)
+const WEATHER_TOP = 92; // particles fall from here to y=0, then recycle
+const WEATHER_Z_MIN = 20; // foreground-to-mid slab (in front of / among nearer buildings)
+const WEATHER_Z_MAX = 76;
+const WEATHER_CAPACITY = 1400; // max instances (rain uses the most); one InstancedMesh
+const WEATHER = {
+  none: { count: 0, fog: 0 },
+  // vy: fall speed, vx: horizontal drift, sway: lateral wobble amplitude,
+  // sx/sy/sz: per-instance streak scale (world units), color/opacity: look, fog: density.
+  rain: { count: 1400, vy: 72, vx: -11, sway: 0, sx: 0.28, sy: 2.6, sz: 0.28, color: 0xbef2ff, opacity: 0.6, fog: 0.002 },
+  snow: { count: 700, vy: 11, vx: -2, sway: 2.0, sx: 0.55, sy: 0.55, sz: 0.55, color: 0xf2feff, opacity: 0.92, fog: 0.0015 },
+  wind: { count: 900, vy: 8, vx: -56, sway: 0.6, sx: 3.4, sy: 0.24, sz: 0.24, color: 0xd6ecff, opacity: 0.5, fog: 0.0024 },
+  fog: { count: 0, fog: 0.01 },
+};
+
+function wRand(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function buildWeather() {
+  weatherCountScale = window.innerWidth < 700 ? 0.45 : 1;
+  weatherGroup = new THREE.Group();
+  weatherMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false,
+  });
+  weatherMesh = new THREE.InstancedMesh(unitBox, weatherMaterial, WEATHER_CAPACITY);
+  weatherMesh.frustumCulled = false;
+  weatherMesh.renderOrder = 5;
+  weatherMesh.count = 0;
+  weatherParticles = [];
+  for (let i = 0; i < WEATHER_CAPACITY; i++) {
+    weatherParticles.push({
+      x: wRand(-WEATHER_HALF_W, WEATHER_HALF_W),
+      y: wRand(0, WEATHER_TOP),
+      z: wRand(WEATHER_Z_MIN, WEATHER_Z_MAX),
+      phase: wRand(0, WTAU),
+      jitter: wRand(0.8, 1.25),
+    });
+  }
+  weatherGroup.add(weatherMesh);
+  weatherGroup.visible = false;
+  scene.add(weatherGroup);
+}
+
+function setWeather(mode) {
+  // Own-property check so inherited keys (constructor, toString, __proto__, …) don't
+  // slip past as "valid" modes.
+  if (!Object.prototype.hasOwnProperty.call(WEATHER, mode)) mode = 'none';
+  weatherMode = mode;
+  if (canvas) canvas.dataset.weather = mode;
+  window.dispatchEvent(new CustomEvent('city-weather', { detail: { weather: weatherMode } }));
+  if (!weatherMesh) return;
+  const params = WEATHER[mode];
+  // Under prefers-reduced-motion, suppress the moving particle layer entirely (rain/
+  // snow/wind). Fog stays — it's a static density boost, not motion.
+  const count = reducedMotion ? 0 : Math.round((params.count || 0) * weatherCountScale);
+  if (params.color !== undefined) weatherMaterial.color.set(params.color);
+  if (params.opacity !== undefined) weatherMaterial.opacity = params.opacity;
+  weatherMesh.count = Math.min(WEATHER_CAPACITY, count);
+  weatherGroup.visible = weatherMesh.count > 0;
+}
+
+function updateWeather(delta) {
+  if (!weatherMesh || weatherMesh.count === 0) return;
+  const params = WEATHER[weatherMode];
+  const slow = reducedMotion ? 0.45 : 1;
+  const count = weatherMesh.count;
+  for (let i = 0; i < count; i++) {
+    const pt = weatherParticles[i];
+    pt.y -= params.vy * slow * pt.jitter * delta;
+    pt.x += params.vx * slow * delta;
+    if (pt.y < 0) {
+      pt.y += WEATHER_TOP;
+      pt.x = wRand(-WEATHER_HALF_W, WEATHER_HALF_W);
+      pt.z = wRand(WEATHER_Z_MIN, WEATHER_Z_MAX);
+    }
+    pt.x = wrapX(pt.x, WEATHER_HALF_W);
+    const swayX = params.sway ? Math.sin(elapsed * 1.3 + pt.phase) * params.sway : 0;
+    dummy.position.set(pt.x + swayX, pt.y, pt.z);
+    dummy.rotation.set(0, 0, 0);
+    dummy.scale.set(params.sx, params.sy, params.sz);
+    dummy.updateMatrix();
+    weatherMesh.setMatrixAt(i, dummy.matrix);
+  }
+  weatherMesh.instanceMatrix.needsUpdate = true;
+}
+
+function buildGroundAgents() {
+  groundGroup = new THREE.Group();
+  const mobile = window.innerWidth < 700;
+  groundAgents = createGroundAgents(seed, { mobile });
+  buildAvenue();
+  buildPedestrians(groundAgents.pedestrians);
+  buildRobots(groundAgents.robots);
+  buildVehicles(groundAgents.vehicles);
+  buildSubwayEntrance(-34, 67, 0);
+  buildSubwayEntrance(40, 67, 1);
+  scene.add(groundGroup);
+}
+
+function updateGroundAgents(delta) {
+  if (!groundGroup) return;
+  // Under reduced motion the build-time static poses are already correct, so there is
+  // nothing to animate — skip the per-frame matrix recompute + GPU re-upload entirely.
+  if (reducedMotion) return;
+  const step = delta * 60;
+  if (pedestrianBodies && pedestrianState.length) {
+    for (let i = 0; i < pedestrianState.length; i++) {
+      const p = pedestrianState[i];
+      if (!reducedMotion) p.x = wrapX(p.x + p.vx * step, AGENT_BOUND);
+      // Abs(sin) gives an upward step-bounce rather than a sink-through-the-floor dip.
+      const bob = reducedMotion ? 0 : Math.abs(Math.sin(elapsed * p.bobSpeed + p.bobPhase)) * p.bobAmp;
+      dummy.rotation.set(0, 0, 0);
+      dummy.position.set(p.x, p.bodyBaseY + bob, p.z);
+      dummy.scale.set(p.bodyW, p.bodyH, p.bodyD);
+      dummy.updateMatrix();
+      pedestrianBodies.setMatrixAt(p.index, dummy.matrix);
+      dummy.position.set(p.x, p.headBaseY + bob, p.z);
+      dummy.scale.set(p.headSize, p.headSize, p.headSize);
+      dummy.updateMatrix();
+      pedestrianHeads.setMatrixAt(p.index, dummy.matrix);
+    }
+    pedestrianBodies.instanceMatrix.needsUpdate = true;
+    pedestrianHeads.instanceMatrix.needsUpdate = true;
+  }
+  for (let i = 0; i < robotState.length; i++) {
+    const r = robotState[i];
+    if (!reducedMotion) r.x = wrapX(r.x + r.vx * step, AGENT_BOUND);
+    const bob = (reducedMotion || !r.bobAmp) ? 0 : Math.abs(Math.sin(elapsed * r.bobSpeed + r.bobPhase)) * r.bobAmp;
+    r.mesh.position.set(r.x, bob, r.z);
+  }
+  for (let i = 0; i < vehicleState.length; i++) {
+    const v = vehicleState[i];
+    if (!reducedMotion) v.x = wrapX(v.x + v.vx * step, AGENT_BOUND);
+    v.mesh.position.set(v.x, 0, v.z);
+  }
+}
+
 function buildPostProcess() {
   postScene = new THREE.Scene();
   postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -777,6 +1207,12 @@ function resize() {
   camera.bottom = -VIEW_HEIGHT / 2;
   camera.updateProjectionMatrix();
   postMaterial.uniforms.uResolution.value.set(renderWidth, renderHeight);
+  // Re-apply the mobile/desktop particle budget if the viewport crossed the breakpoint.
+  const newScale = window.innerWidth < 700 ? 0.45 : 1;
+  if (newScale !== weatherCountScale) {
+    weatherCountScale = newScale;
+    if (weatherMode !== 'none') setWeather(weatherMode);
+  }
 }
 
 function updateEnvironment() {
@@ -787,7 +1223,9 @@ function updateEnvironment() {
   const night = Math.max(0, Math.min(1, solar.starVisibility ?? 1));
   ambientLight.intensity = 0.48 + night * 0.42;
   directionalLight.intensity = 1.1 - night * 0.35;
-  scene.fog.density = 0.006 + 0.0014 + night * 0.0024;
+  const weatherFog = (WEATHER[weatherMode] && WEATHER[weatherMode].fog) || 0;
+  // Clamp the total so fog mode + full night doesn't whiteout the foreground crowd.
+  scene.fog.density = Math.min(0.014, 0.006 + 0.0014 + night * 0.0024 + weatherFog);
 }
 
 function renderFrame(now) {
@@ -807,6 +1245,8 @@ function renderFrame(now) {
   if (!reducedMotion) scrollDistance += delta * speed * 1.45;
   cityRoot.position.x = -(scrollDistance % WORLD_WIDTH);
   updateFlyers(delta);
+  updateGroundAgents(delta);
+  updateWeather(delta);
 
   if (!reducedMotion) {
     pointerX += (pointerTargetX - pointerX) * 0.04;
@@ -847,6 +1287,9 @@ function dispose() {
   const materials = new Set();
   if (scene) {
     scene.traverse((object) => {
+      // InstancedMeshes own their instanceMatrix/instanceColor GPU buffers; the shared
+      // geometry.dispose() below doesn't free those — release them explicitly.
+      if (object.isInstancedMesh && typeof object.dispose === 'function') object.dispose();
       if (object.geometry) geometries.add(object.geometry);
       if (Array.isArray(object.material)) object.material.forEach((material) => materials.add(material));
       else if (object.material) materials.add(object.material);
@@ -909,6 +1352,8 @@ async function init() {
   buildCity();
   buildGround();
   buildFlyers();
+  buildGroundAgents();
+  buildWeather();
   renderTarget = new THREE.WebGLRenderTarget(1, 1, {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
@@ -924,6 +1369,7 @@ async function init() {
   const speedInput = document.getElementById('city-speed');
   if (speedInput) api.setSpeed(speedInput.value);
   applyTheme(currentTheme);
+  setWeather(params.get('weather') || 'none');
   resize();
 
   window.addEventListener('resize', resize);
