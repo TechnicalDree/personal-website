@@ -1,6 +1,6 @@
 {
   "user": "TechnicalDree",
-  "generatedAt": "2026-07-20T08:02:28.351766+00:00",
+  "generatedAt": "2026-07-21T07:49:23.231243+00:00",
   "years": [
     {
       "year": 2026,
@@ -13076,9 +13076,51 @@
         "repo": "TechnicalDree/TaskManager",
         "message": "Initial commit",
         "url": "https://github.com/TechnicalDree/TaskManager/commit/362c30333893356fed20a8be16f022c5609f72c3"
+      },
+      {
+        "date": "2025-07-14T05:59:15Z",
+        "repo": "TechnicalDree/lab-4-real-time-kernel",
+        "message": "added files",
+        "url": "https://github.com/TechnicalDree/lab-4-real-time-kernel/commit/3a60f1a25c59bd6280baf0367715d63e9cc31f5a"
+      },
+      {
+        "date": "2025-07-14T05:44:45Z",
+        "repo": "TechnicalDree/lab-3-timers-interrupts-and-system-calls",
+        "message": "added files",
+        "url": "https://github.com/TechnicalDree/lab-3-timers-interrupts-and-system-calls/commit/87788d60b399bb16f05398ece97ffd672afc123b"
+      },
+      {
+        "date": "2025-07-14T05:04:04Z",
+        "repo": "TechnicalDree/lab-5-motor-control-using-rtos",
+        "message": "added files",
+        "url": "https://github.com/TechnicalDree/lab-5-motor-control-using-rtos/commit/91fbeeb84bde039353cdc3c16471b66211678833"
+      },
+      {
+        "date": "2025-03-20T04:38:08Z",
+        "repo": "TechnicalDree/16280_HW4",
+        "message": "Add HW4_slam files",
+        "url": "https://github.com/TechnicalDree/16280_HW4/commit/03e6e74c2d0b8d55eb5e63e05fd403e332059d6c"
       }
     ],
     "2024": [
+      {
+        "date": "2024-08-17T09:35:23Z",
+        "repo": "TechnicalDree/forage-jpmc-swe-task-3",
+        "message": "First commit",
+        "url": "https://github.com/TechnicalDree/forage-jpmc-swe-task-3/commit/d0191496112fab4e02a0cafc2290f65c2bb3d99f"
+      },
+      {
+        "date": "2024-08-17T08:36:44Z",
+        "repo": "TechnicalDree/forage-jpmc-swe-task-2",
+        "message": "First commit",
+        "url": "https://github.com/TechnicalDree/forage-jpmc-swe-task-2/commit/4c51b844b47da7c29dc04fe83397f6aef6029152"
+      },
+      {
+        "date": "2024-08-17T05:39:45Z",
+        "repo": "TechnicalDree/forage-jpmc-swe-task-1",
+        "message": "first commit",
+        "url": "https://github.com/TechnicalDree/forage-jpmc-swe-task-1/commit/22dafb7e6de6c837d1b6c788ebe86e76b431fc2d"
+      },
       {
         "date": "2024-02-08T00:29:17Z",
         "repo": "TechnicalDree/Sudoku",
