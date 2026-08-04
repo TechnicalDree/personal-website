@@ -1,6 +1,6 @@
 {
   "user": "a3rean",
-  "generatedAt": "2026-08-03T08:10:09.992386+00:00",
+  "generatedAt": "2026-08-04T07:53:39.791652+00:00",
   "profile": {
     "name": "a3rean",
     "addedAt": 1643789634823,
@@ -153,14 +153,14 @@
       "time": {
         "15": {
           "english": {
-            "rank": 88492,
-            "count": 516474
+            "rank": 88535,
+            "count": 516704
           }
         },
         "60": {
           "english": {
-            "rank": 58102,
-            "count": 508721
+            "rank": 58128,
+            "count": 508965
           }
         }
       }
@@ -168,12 +168,6 @@
     "uid": "5BkkUGvDP0erNVChpn1Q6YUFWNz1",
     "testActivity": {
       "days": [
-        {
-          "date": "2025-07-29",
-          "count": 2,
-          "level": 2,
-          "row": 3
-        },
         {
           "date": "2025-07-30",
           "count": 0,
@@ -2393,10 +2387,15 @@
           "count": 0,
           "level": 0,
           "row": 2
+        },
+        {
+          "date": "2026-08-04",
+          "count": 0,
+          "level": 0,
+          "row": 3
         }
       ],
       "testsByDays": [
-        2,
         0,
         0,
         2,
@@ -2766,9 +2765,10 @@
         0,
         1,
         0,
+        0,
         0
       ],
-      "total": 412
+      "total": 410
     }
   }
 }
