@@ -1,6 +1,6 @@
 {
   "user": "TechnicalDree",
-  "generatedAt": "2026-08-09T07:52:04.479294+00:00",
+  "generatedAt": "2026-08-10T08:24:46.050057+00:00",
   "years": [
     {
       "year": 2026,
@@ -12817,6 +12817,18 @@
   ],
   "commitsByYear": {
     "2026": [
+      {
+        "date": "2026-08-09T19:46:49Z",
+        "repo": "TechnicalDree/Cass",
+        "message": "Merge pull request #1 from TechnicalDree/p0-correctness-session-cancel",
+        "url": "https://github.com/TechnicalDree/Cass/commit/4178659e9eb45c5f54084eda5709a3cd535453f7"
+      },
+      {
+        "date": "2026-08-09T00:04:28Z",
+        "repo": "TechnicalDree/Cass",
+        "message": "fix: P0 session memory, cancel vs reset, and empty-queue guards",
+        "url": "https://github.com/TechnicalDree/Cass/commit/23d23d34ab6ef9110284b79554283eb5a4262933"
+      },
       {
         "date": "2026-07-07T20:43:07Z",
         "repo": "TechnicalDree/astraeus",
