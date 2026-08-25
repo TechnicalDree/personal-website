@@ -1,27 +1,27 @@
 {
   "user": "a3rean",
-  "generatedAt": "2026-08-24T07:55:50.485137+00:00",
+  "generatedAt": "2026-08-25T07:41:10.315660+00:00",
   "profile": {
     "name": "a3rean",
     "addedAt": 1643789634823,
     "typingStats": {
-      "completedTests": 3195,
-      "startedTests": 8282,
-      "timeTyping": 73377.52000000021
+      "completedTests": 3204,
+      "startedTests": 8303,
+      "timeTyping": 73568.9500000002
     },
     "personalBests": {
       "time": {
         "15": [
           {
             "acc": 100,
-            "consistency": 88.42,
+            "consistency": 79.6,
             "difficulty": "normal",
             "lazyMode": false,
             "language": "english",
             "punctuation": false,
-            "raw": 130.3,
-            "wpm": 130.3,
-            "timestamp": 1754538728937,
+            "raw": 131.2,
+            "wpm": 131.2,
+            "timestamp": 1787619261084,
             "numbers": false
           },
           {
@@ -75,15 +75,15 @@
         ],
         "30": [
           {
-            "acc": 100,
-            "consistency": 88.75,
+            "acc": 99.07,
+            "consistency": 88.44,
             "difficulty": "normal",
             "lazyMode": false,
             "language": "english",
             "punctuation": false,
-            "raw": 125.2,
-            "wpm": 125.2,
-            "timestamp": 1761845750323,
+            "raw": 129.56,
+            "wpm": 125.56,
+            "timestamp": 1787619176606,
             "numbers": false
           }
         ],
@@ -136,7 +136,7 @@
         "100": []
       }
     },
-    "xp": 709334,
+    "xp": 710681,
     "streak": 1,
     "maxStreak": 29,
     "isPremium": false,
@@ -153,14 +153,14 @@
       "time": {
         "15": {
           "english": {
-            "rank": 89311,
-            "count": 521052
+            "rank": 83942,
+            "count": 521297
           }
         },
         "60": {
           "english": {
-            "rank": 58647,
-            "count": 513421
+            "rank": 58687,
+            "count": 513678
           }
         }
       }
@@ -168,12 +168,6 @@
     "uid": "5BkkUGvDP0erNVChpn1Q6YUFWNz1",
     "testActivity": {
       "days": [
-        {
-          "date": "2025-08-19",
-          "count": 0,
-          "level": 0,
-          "row": 3
-        },
         {
           "date": "2025-08-20",
           "count": 0,
@@ -2393,10 +2387,15 @@
           "count": 0,
           "level": 0,
           "row": 2
+        },
+        {
+          "date": "2026-08-25",
+          "count": 9,
+          "level": 4,
+          "row": 3
         }
       ],
       "testsByDays": [
-        0,
         0,
         0,
         0,
@@ -2766,9 +2765,10 @@
         0,
         0,
         0,
-        0
+        0,
+        9
       ],
-      "total": 402
+      "total": 411
     }
   }
 }
