@@ -1,13 +1,13 @@
 {
   "user": "a3rean",
-  "generatedAt": "2026-11-17T16:40:00.269899+00:00",
+  "generatedAt": "2026-11-18T16:09:45.704251+00:00",
   "profile": {
     "name": "a3rean",
     "addedAt": 1643789634823,
     "typingStats": {
-      "completedTests": 3224,
-      "startedTests": 8332,
-      "timeTyping": 74260.30000000015
+      "completedTests": 3225,
+      "startedTests": 8333,
+      "timeTyping": 74290.31000000014
     },
     "personalBests": {
       "time": {
@@ -136,8 +136,8 @@
         "100": []
       }
     },
-    "xp": 721886,
-    "streak": 2,
+    "xp": 722943,
+    "streak": 1,
     "maxStreak": 29,
     "isPremium": false,
     "details": {
@@ -153,14 +153,14 @@
       "time": {
         "15": {
           "english": {
-            "rank": 88220,
-            "count": 542650
+            "rank": 88277,
+            "count": 542941
           }
         },
         "60": {
           "english": {
-            "rank": 61324,
-            "count": 534376
+            "rank": 61366,
+            "count": 534673
           }
         }
       }
@@ -168,12 +168,6 @@
     "uid": "5BkkUGvDP0erNVChpn1Q6YUFWNz1",
     "testActivity": {
       "days": [
-        {
-          "date": "2025-11-12",
-          "count": 3,
-          "level": 2,
-          "row": 4
-        },
         {
           "date": "2025-11-13",
           "count": 5,
@@ -2393,10 +2387,15 @@
           "count": 0,
           "level": 0,
           "row": 3
+        },
+        {
+          "date": "2026-11-18",
+          "count": 1,
+          "level": 1,
+          "row": 4
         }
       ],
       "testsByDays": [
-        3,
         5,
         2,
         6,
@@ -2766,9 +2765,10 @@
         0,
         0,
         0,
-        0
+        0,
+        1
       ],
-      "total": 237
+      "total": 235
     }
   }
 }
